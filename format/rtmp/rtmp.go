@@ -8,16 +8,18 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/nareix/joy4/utils/bits/pio"
-	"github.com/nareix/joy4/av"
-	"github.com/nareix/joy4/av/avutil"
-	"github.com/nareix/joy4/format/flv"
-	"github.com/nareix/joy4/format/flv/flvio"
 	"io"
+	"log"
 	"net"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/nareix/joy4/av"
+	"github.com/nareix/joy4/av/avutil"
+	"github.com/nareix/joy4/format/flv"
+	"github.com/nareix/joy4/format/flv/flvio"
+	"github.com/nareix/joy4/utils/bits/pio"
 )
 
 var Debug bool
@@ -89,7 +91,7 @@ func (self *Server) ListenAndServe() (err error) {
 	}
 	var tcpaddr *net.TCPAddr
 	if tcpaddr, err = net.ResolveTCPAddr("tcp", addr); err != nil {
-		err = fmt.Errorf("rtmp: ListenAndServe: %s", err)
+		err = log.Errorf("rtmp: ListenAndServe: %s", err)
 		return
 	}
 
@@ -97,9 +99,10 @@ func (self *Server) ListenAndServe() (err error) {
 	if listener, err = net.ListenTCP("tcp", tcpaddr); err != nil {
 		return
 	}
+	log.Println("Listen Success")
 
 	if Debug {
-		fmt.Println("rtmp: server: listening on", addr)
+		log.Println("rtmp: server: listening on", addr)
 	}
 
 	for {
@@ -107,9 +110,10 @@ func (self *Server) ListenAndServe() (err error) {
 		if netconn, err = listener.Accept(); err != nil {
 			return
 		}
+		log.Println("Accept Success")
 
 		if Debug {
-			fmt.Println("rtmp: server: accepted")
+			log.Println("rtmp: server: accepted")
 		}
 
 		conn := NewConn(netconn)
@@ -117,7 +121,7 @@ func (self *Server) ListenAndServe() (err error) {
 		go func() {
 			err := self.handleConn(conn)
 			if Debug {
-				fmt.Println("rtmp: server: client closed err:", err)
+				log.Println("rtmp: server: client closed err:", err)
 			}
 		}()
 	}
