@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/url"
 	"strings"
@@ -20,6 +19,8 @@ import (
 	"github.com/nareix/joy4/format/flv"
 	"github.com/nareix/joy4/format/flv/flvio"
 	"github.com/nareix/joy4/utils/bits/pio"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 var Debug bool
@@ -60,6 +61,7 @@ type Server struct {
 	HandlePublish func(*Conn)
 	HandlePlay    func(*Conn)
 	HandleConn    func(*Conn)
+	Zerolog       zerolog
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
@@ -85,6 +87,8 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 }
 
 func (self *Server) ListenAndServe() (err error) {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 	addr := self.Addr
 	if addr == "" {
 		addr = ":1935"
@@ -99,7 +103,7 @@ func (self *Server) ListenAndServe() (err error) {
 	if listener, err = net.ListenTCP("tcp", tcpaddr); err != nil {
 		return
 	}
-	log.Println("Listen Success")
+	log.Info().Msg("Listen Success")
 
 	if Debug {
 		log.Println("rtmp: server: listening on", addr)
@@ -110,7 +114,7 @@ func (self *Server) ListenAndServe() (err error) {
 		if netconn, err = listener.Accept(); err != nil {
 			return
 		}
-		log.Println("Accept Success")
+		log.Info().Msg("Accept Success")
 
 		if Debug {
 			log.Println("rtmp: server: accepted")
