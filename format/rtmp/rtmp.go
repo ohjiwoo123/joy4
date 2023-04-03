@@ -61,7 +61,6 @@ type Server struct {
 	HandlePublish func(*Conn)
 	HandlePlay    func(*Conn)
 	HandleConn    func(*Conn)
-	Zerolog       zerolog
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
