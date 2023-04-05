@@ -60,6 +60,7 @@ type Server struct {
 	HandlePublish func(*Conn)
 	HandlePlay    func(*Conn)
 	HandleConn    func(*Conn)
+	Logger        log.FieldLogger
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
@@ -91,7 +92,7 @@ func (self *Server) ListenAndServe() (err error) {
 	}
 	var tcpaddr *net.TCPAddr
 	if tcpaddr, err = net.ResolveTCPAddr("tcp", addr); err != nil {
-		err = log.Errorf("rtmp: ListenAndServe: %s", err)
+		err = self.Logger.Errorf("rtmp: ListenAndServe: %s", err)
 		return
 	}
 
@@ -99,10 +100,10 @@ func (self *Server) ListenAndServe() (err error) {
 	if listener, err = net.ListenTCP("tcp", tcpaddr); err != nil {
 		return
 	}
-	log.Info("Listen Success")
+	self.Logger.Info("Listen Success")
 
 	if Debug {
-		log.Debugf("rtmp: server: listening on : %v", addr)
+		self.Logger.Debugf("rtmp: server: listening on : %v", addr)
 	}
 
 	for {
@@ -110,10 +111,10 @@ func (self *Server) ListenAndServe() (err error) {
 		if netconn, err = listener.Accept(); err != nil {
 			return
 		}
-		log.Info("Accept Success")
+		self.Logger.Info("Accept Success")
 
 		if Debug {
-			log.Debug("rtmp: server: accepted")
+			self.Logger.Debug("rtmp: server: accepted")
 		}
 
 		conn := NewConn(netconn)
@@ -121,7 +122,7 @@ func (self *Server) ListenAndServe() (err error) {
 		go func() {
 			err := self.handleConn(conn)
 			if Debug {
-				log.Debugf("rtmp: server: client closed err: %v", err)
+				self.Logger.Debugf("rtmp: server: client closed err: %v", err)
 			}
 		}()
 	}
@@ -184,6 +185,7 @@ type Conn struct {
 	avtag       flvio.Tag
 
 	eventtype uint16
+	Logger    log.FieldLogger
 }
 
 type txrxcount struct {
