@@ -92,7 +92,8 @@ func (self *Server) ListenAndServe() (err error) {
 	}
 	var tcpaddr *net.TCPAddr
 	if tcpaddr, err = net.ResolveTCPAddr("tcp", addr); err != nil {
-		err = self.Logger.Errorf("rtmp: ListenAndServe: %s", err)
+		//err = self.Logger.Errorf("rtmp: ListenAndServe: %s", err)
+		self.Logger.Errorf("rtmp: ListenAndServe: %v", err)
 		return
 	}
 
