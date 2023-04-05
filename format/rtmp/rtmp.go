@@ -19,8 +19,7 @@ import (
 	"github.com/nareix/joy4/format/flv"
 	"github.com/nareix/joy4/format/flv/flvio"
 	"github.com/nareix/joy4/utils/bits/pio"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	log "github.com/sirupsen/logrus"
 )
 
 var Debug bool
@@ -86,15 +85,13 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 }
 
 func (self *Server) ListenAndServe() (err error) {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
 	addr := self.Addr
 	if addr == "" {
 		addr = ":1935"
 	}
 	var tcpaddr *net.TCPAddr
 	if tcpaddr, err = net.ResolveTCPAddr("tcp", addr); err != nil {
-		err = fmt.Errorf("rtmp: ListenAndServe: %s", err)
+		err = log.Errorf("rtmp: ListenAndServe: %s", err)
 		return
 	}
 
@@ -102,10 +99,10 @@ func (self *Server) ListenAndServe() (err error) {
 	if listener, err = net.ListenTCP("tcp", tcpaddr); err != nil {
 		return
 	}
-	log.Info().Msg("Listen Success")
+	log.Info("Listen Success")
 
 	if Debug {
-		log.Println("rtmp: server: listening on", addr)
+		log.Debugf("rtmp: server: listening on : %v", addr)
 	}
 
 	for {
@@ -113,10 +110,10 @@ func (self *Server) ListenAndServe() (err error) {
 		if netconn, err = listener.Accept(); err != nil {
 			return
 		}
-		log.Info().Msg("Accept Success")
+		log.Info("Accept Success")
 
 		if Debug {
-			log.Println("rtmp: server: accepted")
+			log.Debug("rtmp: server: accepted")
 		}
 
 		conn := NewConn(netconn)
@@ -124,7 +121,7 @@ func (self *Server) ListenAndServe() (err error) {
 		go func() {
 			err := self.handleConn(conn)
 			if Debug {
-				log.Println("rtmp: server: client closed err:", err)
+				log.Debugf("rtmp: server: client closed err: %v", err)
 			}
 		}()
 	}
