@@ -60,7 +60,7 @@ type Server struct {
 	HandlePublish func(*Conn)
 	HandlePlay    func(*Conn)
 	HandleConn    func(*Conn)
-	Logger        log.FieldLogger
+	Logger        *log.Logger
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
