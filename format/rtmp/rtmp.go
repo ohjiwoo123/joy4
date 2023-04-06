@@ -64,9 +64,12 @@ type Server struct {
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
+	log.Println("self.HandleConn :", self.HandleConn)
 	if self.HandleConn != nil {
+		log.Println("self.HandleConn != nil")
 		self.HandleConn(conn)
 	} else {
+		log.Println("self.HandleConn == nil")
 		if err = conn.prepare(stageCommandDone, 0); err != nil {
 			return
 		}
