@@ -64,6 +64,7 @@ type Server struct {
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
+	// hi
 	log.Println("self.HandleConn :", self.HandleConn)
 	if self.HandleConn != nil {
 		log.Println("self.HandleConn != nil")
