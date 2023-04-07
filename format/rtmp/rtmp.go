@@ -1644,7 +1644,6 @@ func (self *Conn) handshakeServer() (err error) {
 		var ok bool
 		var digest []byte
 		if ok, digest = hsParse1(C1, hsClientPartialKey, hsServerFullKey); !ok {
-			//err = fmt.Errorf("rtmp: handshake server: C1 invalid")
 			self.Logger.Error("rtmp: handshake server: C1 invalid")
 			return
 		}
