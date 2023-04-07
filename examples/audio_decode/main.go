@@ -1,11 +1,12 @@
-
 package main
 
 import (
+	"fmt"
+
 	"github.com/nareix/joy4/av"
-	"github.com/nareix/joy4/format"
 	"github.com/nareix/joy4/av/avutil"
 	"github.com/nareix/joy4/cgo/ffmpeg"
+	"github.com/nareix/joy4/format"
 )
 
 // need ffmpeg installed
@@ -16,6 +17,7 @@ func init() {
 
 func main() {
 	file, _ := avutil.Open("projectindex.flv")
+	fmt.Println(file)
 	streams, _ := file.Streams()
 	var dec *ffmpeg.AudioDecoder
 
@@ -37,4 +39,3 @@ func main() {
 
 	file.Close()
 }
-

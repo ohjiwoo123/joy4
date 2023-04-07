@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -31,14 +32,23 @@ func main() {
 
 	l := &sync.RWMutex{}
 	type Channel struct {
+		// One publisher and multiple subscribers thread-safe packet buffer queue.
 		que *pubsub.Queue
 	}
 	channels := map[string]*Channel{}
+	fmt.Println(channels)
+	for k, v := range channels {
+		fmt.Println(k, v)
+	}
 
 	server.HandlePlay = func(conn *rtmp.Conn) {
 		l.RLock()
 		ch := channels[conn.URL.Path]
 		l.RUnlock()
+		fmt.Printf("ch : %v", ch)
+		// for k, v := range ch {
+		// 	fmt.Println(k, v)
+		// 	}
 
 		if ch != nil {
 			cursor := ch.que.Latest()
@@ -51,6 +61,7 @@ func main() {
 
 		l.Lock()
 		ch := channels[conn.URL.Path]
+		fmt.Println("HandlePublish :", ch)
 		if ch == nil {
 			ch = &Channel{}
 			ch.que = pubsub.NewQueue()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/nareix/joy4/av"
 	"github.com/nareix/joy4/av/avutil"
 	"github.com/nareix/joy4/format"
@@ -12,9 +13,17 @@ func init() {
 }
 
 func main() {
-	file, _ := avutil.Open("projectindex.flv")
+	fmt.Println("start")
+	file, err := avutil.Open("projectindex.flv")
+	if err != nil {
+		fmt.Println("Open err")
+	}
 
-	streams, _ := file.Streams()
+	streams, err2 := file.Streams()
+	if err2 != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(streams)
 	for _, stream := range streams {
 		if stream.Type().IsAudio() {
 			astream := stream.(av.AudioCodecData)
@@ -22,6 +31,8 @@ func main() {
 		} else if stream.Type().IsVideo() {
 			vstream := stream.(av.VideoCodecData)
 			fmt.Println(vstream.Type(), vstream.Width(), vstream.Height())
+		} else {
+			fmt.Println("NOT AUDIO VIDEO")
 		}
 	}
 
@@ -36,4 +47,3 @@ func main() {
 
 	file.Close()
 }
-
