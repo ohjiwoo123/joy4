@@ -488,7 +488,7 @@ func (self *Conn) readConnect() (err error) {
 
 				if cberr != nil {
 					//err = fmt.Errorf("rtmp: OnPlayOrPublish check failed")
-					self.Logger.Errof("rtmp: OnPlayOrPublish check failed")
+					self.Logger.Error("rtmp: OnPlayOrPublish check failed")
 					return
 				}
 
