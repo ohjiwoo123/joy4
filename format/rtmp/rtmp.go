@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net"
 	"net/url"
@@ -329,7 +330,10 @@ func getTcUrl(u *url.URL) string {
 	app, _ := SplitPath(u)
 	nu := *u
 	nu.Path = "/" + app
-	return nu.String()
+	fmt.Printf("nu.String() : %v", nu.String())
+	fmt.Printf("strings.SplitN : %v", strings.SplitN(nu.String(), "?", 2)[0])
+	//return nu.String()
+	return strings.SplitN(nu.String(), "?", 2)[0]
 }
 
 func createURL(tcurl, app, play string) (u *url.URL) {
