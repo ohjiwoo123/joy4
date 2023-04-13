@@ -28,9 +28,11 @@ func ParseURL(uri string) (u *url.URL, err error) {
 	if u, err = url.Parse(uri); err != nil {
 		return
 	}
+	fmt.Printf("u.Host: %v", u.Host)
 	if _, _, serr := net.SplitHostPort(u.Host); serr != nil {
 		u.Host += ":1935"
 	}
+	fmt.Printf("u.Host: %v", u.Host)
 	return
 }
 
