@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
+
 	"github.com/nareix/joy4/av"
 	"github.com/nareix/joy4/av/avutil"
 	"github.com/nareix/joy4/format/flv"
@@ -23,19 +25,20 @@ import (
 
 var Debug bool
 
-func (self *Server) ParseURL(uri string) (u *url.URL, err error) {
+func ParseURL(uri string) (u *url.URL, err error) {
 	if u, err = url.Parse(uri); err != nil {
 		return
 	}
-	self.Logger.Infof("u.Host: %v", u.Host)
+	log.Infof("u.Host: %v", u.Host)
 	if _, _, serr := net.SplitHostPort(u.Host); serr != nil {
 		u.Host += ":1935"
 	}
-	self.Logger.Infof("u.Host: %v", u.Host)
+	log.Infof("u.Host: %v", u.Host)
 	return
 }
 
 func Dial(uri string) (conn *Conn, err error) {
+	fmt.Println("Dial Start")
 	return DialTimeout(uri, 0)
 }
 
@@ -327,12 +330,12 @@ func SplitPath(u *url.URL) (app, stream string) {
 	return
 }
 
-func (self *Server) getTcUrl(u *url.URL) string {
+func getTcUrl(u *url.URL) string {
 	app, _ := SplitPath(u)
 	nu := *u
 	nu.Path = "/" + app
-	self.Logger.Infof("nu.String() : %v", nu.String())
-	self.Logger.Infof("strings.SplitN : %v", strings.SplitN(nu.String(), "?", 2)[0])
+	log.Infof("nu.String() : %v", nu.String())
+	log.Infof("strings.SplitN : %v", strings.SplitN(nu.String(), "?", 2)[0])
 	//return nu.String()
 	return strings.SplitN(nu.String(), "?", 2)[0]
 }
