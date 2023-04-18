@@ -7,7 +7,11 @@ import (
 	"github.com/nareix/joy4/format"
 )
 
+/*
+ #include <libavformat/avformat.h>
+*/
 // need ffmpeg installed
+import "C"
 
 func init() {
 	format.RegisterAll()

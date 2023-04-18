@@ -6,7 +6,6 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"io"
 	"net"
 	"net/url"
@@ -119,7 +118,7 @@ func (self *Server) ListenAndServe() (err error) {
 		self.Logger.Info("Accept Success")
 
 		if Debug {
-			self.Logger.Debug("rtmp: server: accepted")
+			//self.Logger.Debug("rtmp: server: accepted")
 		}
 
 		conn := NewConn(netconn)
@@ -334,10 +333,7 @@ func getTcUrl(u *url.URL) string {
 	app, _ := SplitPath(u)
 	nu := *u
 	nu.Path = "/" + app
-	log.Infof("nu.String() : %v", nu.String())
-	log.Infof("strings.SplitN : %v", strings.SplitN(nu.String(), "?", 2)[0])
-	//return nu.String()
-	return strings.SplitN(nu.String(), "?", 2)[0]
+	return nu.String()
 }
 
 func createURL(tcurl, app, play string) (u *url.URL) {
@@ -1333,7 +1329,7 @@ func (self *Conn) readChunk() (err error) {
 	if cs.msgdataleft == 0 {
 		if Debug {
 			self.Logger.Info("rtmp: chunk data")
-			self.Logger.Info(hex.Dump(cs.msgdata))
+			//self.Logger.Info(hex.Dump(cs.msgdata))
 		}
 
 		if err = self.handleMsg(cs.timenow, cs.msgsid, cs.msgtypeid, cs.msgdata); err != nil {

@@ -16,7 +16,7 @@ func init() {
 // as same as: ffmpeg -re -i projectindex.flv -c copy -f flv rtmp://localhost:1936/app/publish
 
 func main() {
-	file, err := avutil.Open("projectindex.flv")
+	file, err := avutil.Open("sample-3.flv")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -25,6 +25,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	demuxer := &pktque.FilterDemuxer{Demuxer: file, Filter: &pktque.Walltime{}}
 	avutil.CopyFile(conn, demuxer)
 
