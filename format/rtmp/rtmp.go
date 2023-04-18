@@ -89,7 +89,7 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 }
 
 func (self *Server) ListenAndServe() (err error) {
-	int cntCn := 0 
+	var ctnCn int = 0
 
 	addr := self.Addr
 	if addr == "" {
@@ -119,7 +119,7 @@ func (self *Server) ListenAndServe() (err error) {
 		}
 		cntCn++
 
-		self.Logger.Infof("Accept Success %v",ctnCn)
+		self.Logger.Infof("Accept Success %v", ctnCn)
 
 		if Debug {
 			//self.Logger.Debug("rtmp: server: accepted")
