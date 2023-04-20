@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/kundera/joy4/av/pktque"
 	"github.com/nareix/joy4/av/avutil"
 	"github.com/nareix/joy4/format"
 	"github.com/nareix/joy4/format/rtmp"
@@ -26,14 +27,8 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	// for {
-	// 	demuxer := &pktque.FilterDemuxer{Demuxer: file, Filter: &pktque.Walltime{}}
-	// 	avutil.CopyFile(conn, demuxer)
-
-	// 	// Reset file to the beginning for subsequent loops
-	// 	file.Seek(0, 0)
-	// }
+	demuxer := &pktque.FilterDemuxer{Demuxer: file, Filter: &pktque.Walltime{}}
+	avutil.CopyFile(conn, demuxer)
 
 	file.Close()
 	conn.Close()

@@ -1748,11 +1748,13 @@ func Handler(h *avutil.RegisterHandler) {
 
 		select {
 		case err = <-waitstart:
+			fmt.Println("h.Server Muxer inside of Handler conn")
 			if err != nil {
 				return
 			}
 
 		case conn := <-waitconn:
+			fmt.Println("h.Server Muxer inside of Handler conn")
 			muxer = closeConn{Conn: conn, waitclose: waitclose}
 			return
 		}
@@ -1789,11 +1791,13 @@ func Handler(h *avutil.RegisterHandler) {
 
 		select {
 		case err = <-waitstart:
+			fmt.Println("h.Server Demuxer inside of Handler case err")
 			if err != nil {
 				return
 			}
 
 		case conn := <-waitconn:
+			fmt.Println("h.Server Demuxer inside of Handler conn")
 			demuxer = closeConn{Conn: conn, waitclose: waitclose}
 			return
 		}
