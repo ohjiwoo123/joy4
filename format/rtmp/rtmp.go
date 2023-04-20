@@ -418,6 +418,7 @@ func (self *Conn) readConnect() (err error) {
 	}
 	connectparams := self.commandobj
 
+	// SetChunkSize 1024 * 1024 * 128, WindowAckSize 5000000, SetPeerBandwidth (5000000,2)
 	if err = self.writeBasicConf(); err != nil {
 		return
 	}
@@ -833,10 +834,12 @@ func (self *Conn) prepare(stage int, flags int) (err error) {
 		switch self.stage {
 		case 0:
 			if self.isserver {
+				fmt.Println("Check Before HandShaking self.IsServer")
 				if err = self.handshakeServer(); err != nil {
 					return
 				}
 			} else {
+				fmt.Println("Check Before HandShaking self.IsServer=false")
 				if err = self.handshakeClient(); err != nil {
 					return
 				}
@@ -844,15 +847,18 @@ func (self *Conn) prepare(stage int, flags int) (err error) {
 
 		case stageHandshakeDone:
 			if self.isserver {
+				fmt.Println("Check Before readConnect")
 				if err = self.readConnect(); err != nil {
 					return
 				}
 			} else {
 				if flags == prepareReading {
+					fmt.Println("Check Before connectPlay")
 					if err = self.connectPlay(); err != nil {
 						return
 					}
 				} else {
+					fmt.Println("Check Before connectPublish")
 					if err = self.connectPublish(); err != nil {
 						return
 					}

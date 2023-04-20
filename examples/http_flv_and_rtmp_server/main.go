@@ -46,9 +46,9 @@ func main() {
 		ch := channels[conn.URL.Path]
 		l.RUnlock()
 		fmt.Printf("ch : %v", ch)
-		// for k, v := range ch {
-		// 	fmt.Println(k, v)
-		// 	}
+		for k, v := range ch.que {
+			fmt.Println(k, v)
+		}
 
 		if ch != nil {
 			cursor := ch.que.Latest()
@@ -61,7 +61,7 @@ func main() {
 
 		l.Lock()
 		ch := channels[conn.URL.Path]
-		fmt.Println("HandlePublish :", ch)
+		fmt.Printf("HandlePublish : %#v", ch.que)
 		if ch == nil {
 			ch = &Channel{}
 			ch.que = pubsub.NewQueue()
