@@ -68,17 +68,20 @@ type Server struct {
 
 func (self *Server) handleConn(conn *Conn) (err error) {
 	if self.HandleConn != nil {
+		fmt.Println("self.HandleConn is nil")
 		self.HandleConn(conn)
 	} else {
+		fmt.Println("Before conn.prepare")
 		if err = conn.prepare(stageCommandDone, 0); err != nil {
 			return
 		}
-
 		if conn.playing {
+			fmt.Println("Before conn.playing")
 			if self.HandlePlay != nil {
 				self.HandlePlay(conn)
 			}
 		} else if conn.publishing {
+			fmt.Println("Before conn.publishing")
 			if self.HandlePublish != nil {
 				self.HandlePublish(conn)
 			}
