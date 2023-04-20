@@ -389,6 +389,7 @@ func (self *Conn) readConnect() (err error) {
 	if err = self.pollCommand(); err != nil {
 		return
 	}
+	fmt.Printf("inside of readConnect %#v\n", self.commandname)
 	if self.commandname != "connect" {
 		//err = fmt.Errorf("rtmp: first command is not connect")
 		self.Logger.Error("rtmp: first command is not connect")
@@ -448,8 +449,8 @@ func (self *Conn) readConnect() (err error) {
 			return
 		}
 		if self.gotcommand {
+			fmt.Printf("inside of readConnect for loop : %#v\n", self.commandname)
 			switch self.commandname {
-
 			// < createStream
 			case "createStream":
 				self.avmsgsid = uint32(1)
@@ -866,6 +867,7 @@ func (self *Conn) prepare(stage int, flags int) (err error) {
 			}
 
 		case stageCommandDone:
+			fmt.Println("case stageCommandDone")
 			if flags == prepareReading {
 				if err = self.probe(); err != nil {
 					return
