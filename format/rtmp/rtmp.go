@@ -45,12 +45,12 @@ func Dial(uri string) (conn *Conn, err error) {
 	return DialTimeout(uri, 0)
 }
 
-func (self *Server) DialTimeout(uri string, timeout time.Duration) (conn *Conn, err error) {
+func DialTimeout(uri string, timeout time.Duration) (conn *Conn, err error) {
 	var u *url.URL
 	if u, err = ParseURL(uri); err != nil {
 		return
 	}
-	self.Logger.Infof("ParseUrl : %s", uri)
+	log.Infof("ParseUrl : %s", uri)
 	_, publishpath := SplitPath(u)
 	if len(self.StreamKey) == 0 {
 		self.StreamKey = append(self.StreamKey, publishpath)
@@ -153,6 +153,9 @@ func (self *Server) ListenAndServe() (err error) {
 		conn.isserver = true
 		go func() {
 			err := self.handleConn(conn)
+			if err != nil {
+				self.Logger.Infof("rtmp: server: client closed err: %v", err)
+			}
 			if Debug {
 				self.Logger.Debugf("rtmp: server: client closed err: %v", err)
 			}
