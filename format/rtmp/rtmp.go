@@ -67,6 +67,7 @@ type Server struct {
 	HandlePlay    func(*Conn)
 	HandleConn    func(*Conn)
 	Logger        *log.Logger
+	StreamKey     []string
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
@@ -201,6 +202,8 @@ type Conn struct {
 
 	eventtype uint16
 	Logger    log.FieldLogger
+
+	StreamKey []string
 }
 
 type txrxcount struct {
@@ -233,6 +236,7 @@ func NewConn(netconn net.Conn) *Conn {
 	conn.txrxcount = &txrxcount{ReadWriter: netconn}
 	conn.writebuf = make([]byte, 4096)
 	conn.readbuf = make([]byte, 4096)
+	conn.StreamKey = make([]string, 1000)
 	return conn
 }
 
@@ -637,7 +641,7 @@ func (self *Conn) writeConnect(path string) (err error) {
 		self.Logger.Debugf("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
 	}
 
-	log.Infof("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
+	log.Infof("rtmp: > connect('%s') host=%s\n , self.URL %s", path, self.URL.Host, self.URL)
 
 	if err = self.writeCommandMsg(3, 0, "connect", 1,
 		flvio.AMFMap{
@@ -693,6 +697,8 @@ func (self *Conn) writeConnect(path string) (err error) {
 					self.readAckSize = pio.U32BE(self.msgdata)
 				}
 				if err = self.writeWindowAckSize(0xffffffff); err != nil {
+					log.Println("writeWindowAckSize error")
+					log.Println(err)
 					return
 				}
 			}
@@ -707,9 +713,10 @@ func (self *Conn) connectPublish() (err error) {
 	defer func() {
 		r := recover() //복구 및 에러 메시지 초기화
 		log.Info(r)    //에러 메시지 출력
+		log.Info("defer connectPublish")
 	}()
 	connectpath, publishpath := SplitPath(self.URL)
-	log.Info("inside of connectPublish")
+	log.Infof("inside of connectPublish , connect path : %s, publishpath : %s", connectpath, publishpath)
 	if err = self.writeConnect(connectpath); err != nil {
 		log.Info("There is Some Error with writeConnect")
 		log.Info(err)
@@ -719,6 +726,7 @@ func (self *Conn) connectPublish() (err error) {
 	transid := 2
 
 	// > createStream()
+	log.Info("rtmp: > createStream()\n")
 	if Debug {
 		log.Info("rtmp: > createStream()\n")
 	}
