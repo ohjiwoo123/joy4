@@ -52,6 +52,7 @@ func (self *Server) DialTimeout(uri string, timeout time.Duration) (conn *Conn, 
 		return
 	}
 	self.Logger.Infof("ParseUrl : %s", uri)
+	log.Infof("ParseUrl : %s", uri)
 
 	dailer := net.Dialer{Timeout: timeout}
 	var netconn net.Conn
@@ -83,7 +84,7 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 		self.HandleConn(conn)
 	} else {
 		fmt.Println("Before conn.prepare")
-		if err = conn.prepare(stageCommandDone, 0, self.KeyMap); err != nil {
+		if err = conn.prepare(stageCommandDone, 0); err != nil {
 			return
 		}
 		if conn.playing {
