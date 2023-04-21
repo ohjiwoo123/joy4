@@ -651,9 +651,11 @@ func (self *Conn) writeConnect(path string) (err error) {
 			"videoFunction": 1,
 		},
 	); err != nil {
-		log.Infof("writeCommand Msg : %#v", err)
+		log.Info("writeCommand Msg")
+		log.Info(err)
 		return
 	}
+	log.Info("after writeCommandMsg insideof writeConnect")
 
 	if err = self.flushWrite(); err != nil {
 		log.Info("Inside of Write Connect flushWrite error")
@@ -661,12 +663,16 @@ func (self *Conn) writeConnect(path string) (err error) {
 	}
 
 	for {
+		log.Info("before pollMsg insideof writeConnect")
 		if err = self.pollMsg(); err != nil {
+			log.Info(err)
 			return
 		}
 		if self.gotcommand {
+			log.Info("self.gotcommand")
 			// < _result("NetConnection.Connect.Success")
 			if self.commandname == "_result" {
+				log.Info("self.gotcommand1111")
 				var ok bool
 				var errmsg string
 				if ok, errmsg = self.checkConnectResult(); !ok {
@@ -681,6 +687,7 @@ func (self *Conn) writeConnect(path string) (err error) {
 				break
 			}
 		} else {
+			log.Info("self.gotcommand2222")
 			if self.msgtypeid == msgtypeidWindowAckSize {
 				if len(self.msgdata) == 4 {
 					self.readAckSize = pio.U32BE(self.msgdata)
@@ -690,6 +697,7 @@ func (self *Conn) writeConnect(path string) (err error) {
 				}
 			}
 		}
+		log.Info("if xx else : self.gotcommand")
 	}
 
 	return
@@ -699,7 +707,8 @@ func (self *Conn) connectPublish() (err error) {
 	connectpath, publishpath := SplitPath(self.URL)
 	log.Info("inside of connectPublish")
 	if err = self.writeConnect(connectpath); err != nil {
-		log.Infof("There is Some Error with writeConnect", err)
+		log.Info("There is Some Error with writeConnect")
+		log.Info(err)
 		return
 	}
 
@@ -710,19 +719,22 @@ func (self *Conn) connectPublish() (err error) {
 		log.Info("rtmp: > createStream()\n")
 	}
 	if err = self.writeCommandMsg(3, 0, "createStream", transid, nil); err != nil {
-		log.Infof("There is Some Error with writeCommandMsg", err)
+		log.Info("There is Some Error with writeCommandMsg")
+		log.Info(err)
 		return
 	}
 	transid++
 
 	if err = self.flushWrite(); err != nil {
-		log.Infof("There is Some Error with flushWrite", err)
+		log.Info("There is Some Error with flushWrite")
+		log.Info(err)
 		return
 	}
 
 	for {
 		if err = self.pollMsg(); err != nil {
-			log.Infof("There is Some Error with pollMsg", err)
+			log.Info("There is Some Error with pollMsg")
+			log.Info(err)
 			return
 		}
 		if self.gotcommand {
@@ -740,6 +752,7 @@ func (self *Conn) connectPublish() (err error) {
 	}
 
 	// > publish('app')
+	log.Info("rtmp: > publish('%s')\n")
 	if Debug {
 		log.Infof("rtmp: > publish('%s')\n", publishpath)
 	}
