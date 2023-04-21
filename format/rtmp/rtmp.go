@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"fmt"
@@ -52,6 +51,18 @@ func (self *Server) DialTimeout(uri string, timeout time.Duration) (conn *Conn, 
 		return
 	}
 	self.Logger.Infof("ParseUrl : %s", uri)
+	_, publishpath := SplitPath(u)
+	if len(self.StreamKey) == 0 {
+		self.StreamKey = append(self.StreamKey, publishpath)
+	} else {
+		for i, k := range self.StreamKey {
+			if k == self.StreamKey[i] {
+				log.Infof("There is Already Same Stream Key %s", k)
+				panic("There is Already Same Stream Key")
+			}
+		}
+
+	}
 	log.Infof("ParseUrl : %s", uri)
 
 	dailer := net.Dialer{Timeout: timeout}
@@ -72,10 +83,8 @@ type Server struct {
 	HandleConn    func(*Conn)
 	Logger        *log.Logger
 	// for Management Publishing Path
-	KeyMap         map[string]bool
-	StreamKey      []string
-	StreamKeyCount int
-	Mu             sync.Mutex
+	KeyMap    map[string]bool
+	StreamKey []string
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
