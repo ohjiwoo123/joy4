@@ -637,7 +637,7 @@ func (self *Conn) writeConnect(path string) (err error) {
 		self.Logger.Debugf("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
 	}
 
-	self.Logger.Debugf("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
+	log.Infof("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
 
 	if err = self.writeCommandMsg(3, 0, "connect", 1,
 		flvio.AMFMap{
@@ -651,11 +651,12 @@ func (self *Conn) writeConnect(path string) (err error) {
 			"videoFunction": 1,
 		},
 	); err != nil {
-		fmt.Printf("writeCommand Msg : %#v", err)
+		log.Infof("writeCommand Msg : %#v", err)
 		return
 	}
 
 	if err = self.flushWrite(); err != nil {
+		log.Info("Inside of Write Connect flushWrite error")
 		return
 	}
 
@@ -670,12 +671,12 @@ func (self *Conn) writeConnect(path string) (err error) {
 				var errmsg string
 				if ok, errmsg = self.checkConnectResult(); !ok {
 					//err = fmt.Errorf("rtmp: command connect failed: %s", errmsg)
-					self.Logger.Errorf("rtmp: command connect failed: %s", errmsg)
+					log.Errorf("rtmp: command connect failed: %s", errmsg)
 					return
 				}
 				if Debug {
 					//fmt.Printf("rtmp: < _result() of connect\n")
-					self.Logger.Debug("rtmp: < _result() of connect\n")
+					log.Debug("rtmp: < _result() of connect\n")
 				}
 				break
 			}
@@ -696,9 +697,9 @@ func (self *Conn) writeConnect(path string) (err error) {
 
 func (self *Conn) connectPublish() (err error) {
 	connectpath, publishpath := SplitPath(self.URL)
-
+	log.Info("inside of connectPublish")
 	if err = self.writeConnect(connectpath); err != nil {
-		fmt.Println("There is Some Error with writeConnect")
+		log.Infof("There is Some Error with writeConnect", err)
 		return
 	}
 
@@ -706,19 +707,22 @@ func (self *Conn) connectPublish() (err error) {
 
 	// > createStream()
 	if Debug {
-		self.Logger.Info("rtmp: > createStream()\n")
+		log.Info("rtmp: > createStream()\n")
 	}
 	if err = self.writeCommandMsg(3, 0, "createStream", transid, nil); err != nil {
+		log.Infof("There is Some Error with writeCommandMsg", err)
 		return
 	}
 	transid++
 
 	if err = self.flushWrite(); err != nil {
+		log.Infof("There is Some Error with flushWrite", err)
 		return
 	}
 
 	for {
 		if err = self.pollMsg(); err != nil {
+			log.Infof("There is Some Error with pollMsg", err)
 			return
 		}
 		if self.gotcommand {
@@ -727,7 +731,7 @@ func (self *Conn) connectPublish() (err error) {
 				var ok bool
 				if ok, self.avmsgsid = self.checkCreateStreamResult(); !ok {
 					//err = fmt.Errorf("rtmp: createStream command failed")
-					self.Logger.Error("rtmp: createStream command failed")
+					log.Error("rtmp: createStream command failed")
 					return
 				}
 				break
@@ -737,14 +741,16 @@ func (self *Conn) connectPublish() (err error) {
 
 	// > publish('app')
 	if Debug {
-		self.Logger.Infof("rtmp: > publish('%s')\n", publishpath)
+		log.Infof("rtmp: > publish('%s')\n", publishpath)
 	}
 	if err = self.writeCommandMsg(8, self.avmsgsid, "publish", transid, nil, publishpath); err != nil {
+		log.Infof("There is Some Error with writeCommandMsg", err)
 		return
 	}
 	transid++
 
 	if err = self.flushWrite(); err != nil {
+		log.Infof("There is Some Error with flushWrite", err)
 		return
 	}
 
