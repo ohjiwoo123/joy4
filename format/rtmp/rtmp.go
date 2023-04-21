@@ -704,6 +704,10 @@ func (self *Conn) writeConnect(path string) (err error) {
 }
 
 func (self *Conn) connectPublish() (err error) {
+	defer func() {
+		r := recover() //복구 및 에러 메시지 초기화
+		log.Info(r)    //에러 메시지 출력
+	}()
 	connectpath, publishpath := SplitPath(self.URL)
 	log.Info("inside of connectPublish")
 	if err = self.writeConnect(connectpath); err != nil {
@@ -1040,6 +1044,7 @@ func (self *Conn) writeDataMsg(csid, msgsid uint32, args ...interface{}) (err er
 }
 
 func (self *Conn) writeAMF0Msg(msgtypeid uint8, csid, msgsid uint32, args ...interface{}) (err error) {
+	log.Info("writeAMF0Msg start")
 	size := 0
 	for _, arg := range args {
 		size += flvio.LenAMF0Val(arg)
@@ -1052,6 +1057,7 @@ func (self *Conn) writeAMF0Msg(msgtypeid uint8, csid, msgsid uint32, args ...int
 	}
 
 	_, err = self.bufw.Write(b[:n])
+	log.Info("writeAMF0Msg end")
 	return
 }
 
