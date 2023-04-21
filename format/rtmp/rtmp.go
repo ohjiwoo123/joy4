@@ -559,7 +559,7 @@ func (self *Conn) readConnect() (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, playpath)
-				fmt.Printf("tcurl : %#v, connectpath : %#v,publishpath : %#v ", tcurl, connectpath, publishpath)
+				log.Infof("tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
 				self.playing = true
 				self.writing = true
 				self.stage++
