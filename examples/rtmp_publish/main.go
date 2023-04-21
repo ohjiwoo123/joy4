@@ -22,7 +22,7 @@ func main() {
 		fmt.Println(err)
 	}
 	fmt.Println(reflect.TypeOf(file))
-	conn, err := rtmp.Dial("rtmp://localhost:1935/app/publish")
+	conn, err := rtmp.Dial("rtmp://211.49.227.69:1935/app/publish")
 	// conn, _ := avutil.Create("rtmp://localhost:1936/app/publish")
 	if err != nil {
 		fmt.Println(err)

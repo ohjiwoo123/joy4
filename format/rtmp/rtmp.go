@@ -24,6 +24,9 @@ import (
 
 var Debug bool
 
+// pubPathList := make([]string, 500)
+// pubPathCount = 0
+
 func ParseURL(uri string) (u *url.URL, err error) {
 	if u, err = url.Parse(uri); err != nil {
 		return
@@ -506,6 +509,8 @@ func (self *Conn) readConnect() (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, publishpath)
+				//pubPathList =
+				fmt.Printf("tcurl : %#v, connectpath : %#v,publishpath : %#v ", tcurl, connectpath, publishpath)
 				self.publishing = true
 				self.reading = true
 				self.stage++
@@ -554,6 +559,7 @@ func (self *Conn) readConnect() (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, playpath)
+				fmt.Printf("tcurl : %#v, connectpath : %#v,publishpath : %#v ", tcurl, connectpath, publishpath)
 				self.playing = true
 				self.writing = true
 				self.stage++
@@ -630,6 +636,9 @@ func (self *Conn) writeConnect(path string) (err error) {
 	if Debug {
 		self.Logger.Debugf("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
 	}
+
+	self.Logger.Debugf("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
+
 	if err = self.writeCommandMsg(3, 0, "connect", 1,
 		flvio.AMFMap{
 			"app":           path,
@@ -642,6 +651,7 @@ func (self *Conn) writeConnect(path string) (err error) {
 			"videoFunction": 1,
 		},
 	); err != nil {
+		fmt.Printf("writeCommand Msg : %#v", err)
 		return
 	}
 
@@ -688,6 +698,7 @@ func (self *Conn) connectPublish() (err error) {
 	connectpath, publishpath := SplitPath(self.URL)
 
 	if err = self.writeConnect(connectpath); err != nil {
+		fmt.Println("There is Some Error with writeConnect")
 		return
 	}
 
