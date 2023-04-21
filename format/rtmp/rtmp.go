@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"fmt"
@@ -31,6 +32,7 @@ func ParseURL(uri string) (u *url.URL, err error) {
 	if u, err = url.Parse(uri); err != nil {
 		return
 	}
+	log.Infof("uri: %s", uri)
 	log.Infof("u.Host: %v", u.Host)
 	if _, _, serr := net.SplitHostPort(u.Host); serr != nil {
 		u.Host += ":1935"
@@ -44,11 +46,12 @@ func Dial(uri string) (conn *Conn, err error) {
 	return DialTimeout(uri, 0)
 }
 
-func DialTimeout(uri string, timeout time.Duration) (conn *Conn, err error) {
+func (self *Server) DialTimeout(uri string, timeout time.Duration) (conn *Conn, err error) {
 	var u *url.URL
 	if u, err = ParseURL(uri); err != nil {
 		return
 	}
+	self.Logger.Infof("ParseUrl : %s", uri)
 
 	dailer := net.Dialer{Timeout: timeout}
 	var netconn net.Conn
@@ -67,7 +70,11 @@ type Server struct {
 	HandlePlay    func(*Conn)
 	HandleConn    func(*Conn)
 	Logger        *log.Logger
-	StreamKey     []string
+	// for Management Publishing Path
+	KeyMap         map[string]bool
+	StreamKey      []string
+	StreamKeyCount int
+	Mu             sync.Mutex
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
@@ -76,7 +83,7 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 		self.HandleConn(conn)
 	} else {
 		fmt.Println("Before conn.prepare")
-		if err = conn.prepare(stageCommandDone, 0); err != nil {
+		if err = conn.prepare(stageCommandDone, 0, self.KeyMap); err != nil {
 			return
 		}
 		if conn.playing {
@@ -97,7 +104,6 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 
 func (self *Server) ListenAndServe() (err error) {
 	var count int = 0
-
 	addr := self.Addr
 	if addr == "" {
 		addr = ":1935"
@@ -202,8 +208,6 @@ type Conn struct {
 
 	eventtype uint16
 	Logger    log.FieldLogger
-
-	StreamKey []string
 }
 
 type txrxcount struct {
@@ -236,7 +240,6 @@ func NewConn(netconn net.Conn) *Conn {
 	conn.txrxcount = &txrxcount{ReadWriter: netconn}
 	conn.writebuf = make([]byte, 4096)
 	conn.readbuf = make([]byte, 4096)
-	conn.StreamKey = make([]string, 1000)
 	return conn
 }
 
@@ -716,6 +719,9 @@ func (self *Conn) connectPublish() (err error) {
 		log.Info("defer connectPublish")
 	}()
 	connectpath, publishpath := SplitPath(self.URL)
+
+	// publish path check
+
 	log.Infof("inside of connectPublish , connect path : %s, publishpath : %s", connectpath, publishpath)
 	if err = self.writeConnect(connectpath); err != nil {
 		log.Info("There is Some Error with writeConnect")
@@ -1850,4 +1856,8 @@ func Handler(h *avutil.RegisterHandler) {
 	}
 
 	h.CodecTypes = CodecTypes
+}
+
+func remove(slice []int, s int) []int {
+	return append(slice[:s], slice[s+1:]...)
 }
