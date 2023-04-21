@@ -50,19 +50,18 @@ func DialTimeout(uri string, timeout time.Duration) (conn *Conn, err error) {
 	if u, err = ParseURL(uri); err != nil {
 		return
 	}
-	log.Infof("ParseUrl : %s", uri)
-	_, publishpath := SplitPath(u)
-	if len(self.StreamKey) == 0 {
-		self.StreamKey = append(self.StreamKey, publishpath)
-	} else {
-		for i, k := range self.StreamKey {
-			if k == self.StreamKey[i] {
-				log.Infof("There is Already Same Stream Key %s", k)
-				panic("There is Already Same Stream Key")
-			}
-		}
+	// _, publishpath := SplitPath(u)
+	// if len(self.StreamKey) == 0 {
+	// 	self.StreamKey = append(self.StreamKey, publishpath)
+	// } else {
+	// 	for i, k := range self.StreamKey {
+	// 		if k == self.StreamKey[i] {
+	// 			log.Infof("There is Already Same Stream Key %s", k)
+	// 			panic("There is Already Same Stream Key")
+	// 		}
+	// 	}
 
-	}
+	// }
 	log.Infof("ParseUrl : %s", uri)
 
 	dailer := net.Dialer{Timeout: timeout}
