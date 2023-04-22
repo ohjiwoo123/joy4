@@ -1192,6 +1192,7 @@ func (self *Conn) fillChunkHeader(b []byte, csid uint32, timestamp int32, msgtyp
 	}
 
 	if Debug {
+		fmt.Printf("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
 		//fmt.Printf("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
 		self.Logger.Infof("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
 	}
