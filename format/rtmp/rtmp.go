@@ -933,11 +933,13 @@ func (self *Conn) prepare(stage int, flags int) (err error) {
 
 		case stageCommandDone:
 			fmt.Println("case stageCommandDone")
+			fmt.Printf("flags:%#v", flags)
 			if flags == prepareReading {
 				if err = self.probe(); err != nil {
 					return
 				}
 			} else {
+				fmt.Println("case stageCommandDone else")
 				//err = fmt.Errorf("rtmp: call WriteHeader() before WritePacket()")
 				self.Logger.Error("rtmp: call WriteHeader() before WritePacket()")
 				return
