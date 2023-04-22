@@ -478,6 +478,7 @@ func (self *Conn) readConnect() (err error) {
 			switch self.commandname {
 			// < createStream
 			case "createStream":
+				fmt.Println("rtmp: < createSteam(readConnect)")
 				self.avmsgsid = uint32(1)
 				// > _result(streamid)
 				if err = self.writeCommandMsg(3, 0, "_result", self.commandtransid, nil, self.avmsgsid); err != nil {
@@ -489,8 +490,8 @@ func (self *Conn) readConnect() (err error) {
 
 			// < publish("path")
 			case "publish":
+				fmt.Println("rtmp: < publish(readConnect)")
 				if Debug {
-					//Println("rtmp: < publish")
 					self.Logger.Debug("rtmp: < publish")
 				}
 
@@ -537,8 +538,8 @@ func (self *Conn) readConnect() (err error) {
 
 			// < play("path")
 			case "play":
+				fmt.Println("rtmp: < play(readConnect)")
 				if Debug {
-					//fmt.Println("rtmp: < play")
 					self.Logger.Debug("rtmp: < publish")
 				}
 
