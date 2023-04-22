@@ -631,7 +631,9 @@ func (self *Conn) checkCreateStreamResult() (ok bool, avmsgsid uint32) {
 }
 
 func (self *Conn) probe() (err error) {
+	fmt.Println("inside of start probe func!!")
 	for !self.prober.Probed() {
+		fmt.Println("inside of probe func!!")
 		var tag flvio.Tag
 		if tag, err = self.pollAVTag(); err != nil {
 			return
