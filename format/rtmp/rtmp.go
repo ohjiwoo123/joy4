@@ -1216,6 +1216,8 @@ func (self *Conn) readChunk() (err error) {
 	header := b[0]
 	n += 1
 
+	fmt.Printf("check self.commandname %s, 1", self.commandname)
+
 	var msghdrtype uint8
 	var csid uint32
 
@@ -1226,12 +1228,14 @@ func (self *Conn) readChunk() (err error) {
 	default: // Chunk basic header 1
 	case 0: // Chunk basic header 2
 		if _, err = io.ReadFull(self.bufr, b[:1]); err != nil {
+			fmt.Printf("check self.commandname %s, 2", self.commandname)
 			return
 		}
 		n += 1
 		csid = uint32(b[0]) + 64
 	case 1: // Chunk basic header 3
 		if _, err = io.ReadFull(self.bufr, b[:2]); err != nil {
+			fmt.Printf("check self.commandname %s, 2.2", self.commandname)
 			return
 		}
 		n += 2
@@ -1243,6 +1247,7 @@ func (self *Conn) readChunk() (err error) {
 		cs = &chunkStream{}
 		self.readcsmap[csid] = cs
 	}
+	fmt.Printf("check self.commandname %s, 3", self.commandname)
 
 	var timestamp uint32
 
@@ -1268,6 +1273,7 @@ func (self *Conn) readChunk() (err error) {
 		if _, err = io.ReadFull(self.bufr, h); err != nil {
 			return
 		}
+		fmt.Printf("check self.commandname %s, case 0 :3", self.commandname)
 		n += len(h)
 		timestamp = pio.U24BE(h[0:3])
 		cs.msghdrtype = msghdrtype
@@ -1286,6 +1292,7 @@ func (self *Conn) readChunk() (err error) {
 		}
 		cs.timenow = timestamp
 		cs.Start()
+		fmt.Printf("check self.commandname %s, case 0 :3.1", self.commandname)
 
 	case 1:
 		//  0                   1                   2                   3
@@ -1306,6 +1313,7 @@ func (self *Conn) readChunk() (err error) {
 		if _, err = io.ReadFull(self.bufr, h); err != nil {
 			return
 		}
+		fmt.Printf("check self.commandname %s, case 1 :3.1", self.commandname)
 		n += len(h)
 		timestamp = pio.U24BE(h[0:3])
 		cs.msghdrtype = msghdrtype
@@ -1324,6 +1332,7 @@ func (self *Conn) readChunk() (err error) {
 		cs.timedelta = timestamp
 		cs.timenow += timestamp
 		cs.Start()
+		fmt.Printf("check self.commandname %s, case 1 :3.2", self.commandname)
 
 	case 2:
 		//  0                   1                   2
@@ -1342,6 +1351,7 @@ func (self *Conn) readChunk() (err error) {
 		if _, err = io.ReadFull(self.bufr, h); err != nil {
 			return
 		}
+		fmt.Printf("check self.commandname %s, case 2 :3.1", self.commandname)
 		n += len(h)
 		cs.msghdrtype = msghdrtype
 		timestamp = pio.U24BE(h[0:3])
@@ -1358,6 +1368,7 @@ func (self *Conn) readChunk() (err error) {
 		cs.timedelta = timestamp
 		cs.timenow += timestamp
 		cs.Start()
+		fmt.Printf("check self.commandname %s, case 2 :3.2", self.commandname)
 
 	case 3:
 		if cs.msgdataleft == 0 {
@@ -1367,6 +1378,7 @@ func (self *Conn) readChunk() (err error) {
 					if _, err = io.ReadFull(self.bufr, b[:4]); err != nil {
 						return
 					}
+					fmt.Printf("check self.commandname %s, case 3 case 0 :3.1", self.commandname)
 					n += 4
 					timestamp = pio.U32BE(b)
 					cs.timenow = timestamp
@@ -1376,6 +1388,7 @@ func (self *Conn) readChunk() (err error) {
 					if _, err = io.ReadFull(self.bufr, b[:4]); err != nil {
 						return
 					}
+					fmt.Printf("check self.commandname %s, case 3 + case 1 2 :3.1", self.commandname)
 					n += 4
 					timestamp = pio.U32BE(b)
 				} else {
@@ -1401,6 +1414,7 @@ func (self *Conn) readChunk() (err error) {
 	if _, err = io.ReadFull(self.bufr, buf); err != nil {
 		return
 	}
+	fmt.Printf("check self.commandname %s, case 4", self.commandname)
 	n += len(buf)
 	cs.msgdataleft -= uint32(size)
 
@@ -1427,6 +1441,7 @@ func (self *Conn) readChunk() (err error) {
 		}
 		self.ackn = 0
 	}
+	fmt.Printf("check self.commandname %s, case 5", self.commandname)
 
 	return
 }
@@ -1454,6 +1469,7 @@ func (self *Conn) handleCommandMsgAMF0(b []byte) (n int, err error) {
 		self.Logger.Error("rtmp: CommandMsgAMF0 command is not string")
 		return
 	}
+	fmt.Printf("self.commandname : %s", self.commandname)
 	self.commandtransid, _ = transid.(float64)
 	self.commandobj, _ = obj.(flvio.AMFMap)
 	self.commandparams = []interface{}{}
