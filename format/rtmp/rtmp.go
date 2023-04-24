@@ -71,6 +71,7 @@ func DialTimeout(uri string, timeout time.Duration) (conn *Conn, err error) {
 	}
 
 	conn = NewConn(netconn)
+
 	conn.URL = u
 	return
 }
@@ -82,8 +83,7 @@ type Server struct {
 	HandleConn    func(*Conn)
 	Logger        *log.Logger
 	// for Management Publishing Path
-	KeyMap    map[string]bool
-	StreamKey []string
+	KeyMap map[string]bool
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
@@ -407,7 +407,7 @@ func (self *Conn) writeBasicConf() (err error) {
 	return
 }
 
-func (self *Conn) readConnect() (err error) {
+func (self *Conn) readConnect(server *Server) (err error) {
 	var connectpath string
 
 	// < connect("app")
@@ -506,6 +506,26 @@ func (self *Conn) readConnect() (err error) {
 				if self.OnPlayOrPublish != nil {
 					cberr = self.OnPlayOrPublish(self.commandname, connectparams)
 				}
+
+				/////////////////////////////Check whether Stream Key is Same or not////////////////////////////////////
+				// 스트림키를 가진 데이터타입과 비교하여 조건문에 해당하면 아래구문을 처리하게 해야 함
+
+				if server.KeyMap[publishpath] == true {
+					if err = self.writeCommandMsg(5, self.avmsgsid,
+						"onStatus", self.commandtransid, nil,
+						flvio.AMFMap{
+							"level":       "error",
+							"code":        "NetStream.Publish.BadName",
+							"description": "Already Published",
+						},
+					); err != nil {
+						self.Logger.Infof("write badname msg err : %#v", err)
+						return
+					}
+				}
+
+				server.KeyMap[publishpath] = true
+				////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 				// > onStatus()
 				if err = self.writeCommandMsg(5, self.avmsgsid,
@@ -867,8 +887,8 @@ func (self *Conn) connectPlay() (err error) {
 	return
 }
 
-func (self *Conn) ReadPacket() (pkt av.Packet, err error) {
-	if err = self.prepare(stageCodecDataDone, prepareReading); err != nil {
+func (self *Conn) ReadPacket(server *Server) (pkt av.Packet, err error) {
+	if err = self.prepare(stageCodecDataDone, prepareReading, server); err != nil {
 		return
 	}
 
@@ -892,11 +912,11 @@ func (self *Conn) ReadPacket() (pkt av.Packet, err error) {
 	return
 }
 
-func (self *Conn) Prepare() (err error) {
-	return self.prepare(stageCommandDone, 0)
+func (self *Conn) Prepare(server *Server) (err error) {
+	return self.prepare(stageCommandDone, 0, server)
 }
 
-func (self *Conn) prepare(stage int, flags int) (err error) {
+func (self *Conn) prepare(stage int, flags int, server *Server) (err error) {
 	for self.stage < stage {
 		switch self.stage {
 		case 0:
@@ -915,7 +935,7 @@ func (self *Conn) prepare(stage int, flags int) (err error) {
 		case stageHandshakeDone:
 			if self.isserver {
 				fmt.Println("Check Before readConnect")
-				if err = self.readConnect(); err != nil {
+				if err = self.readConnect(server); err != nil {
 					return
 				}
 			} else {
@@ -950,16 +970,16 @@ func (self *Conn) prepare(stage int, flags int) (err error) {
 	return
 }
 
-func (self *Conn) Streams() (streams []av.CodecData, err error) {
-	if err = self.prepare(stageCodecDataDone, prepareReading); err != nil {
+func (self *Conn) Streams(server *Server) (streams []av.CodecData, err error) {
+	if err = self.prepare(stageCodecDataDone, prepareReading, server); err != nil {
 		return
 	}
 	streams = self.streams
 	return
 }
 
-func (self *Conn) WritePacket(pkt av.Packet) (err error) {
-	if err = self.prepare(stageCodecDataDone, prepareWriting); err != nil {
+func (self *Conn) WritePacket(pkt av.Packet, server *Server) (err error) {
+	if err = self.prepare(stageCodecDataDone, prepareWriting, server); err != nil {
 		return
 	}
 
@@ -985,8 +1005,8 @@ func (self *Conn) WriteTrailer() (err error) {
 	return
 }
 
-func (self *Conn) WriteHeader(streams []av.CodecData) (err error) {
-	if err = self.prepare(stageCommandDone, prepareWriting); err != nil {
+func (self *Conn) WriteHeader(streams []av.CodecData, server *Server) (err error) {
+	if err = self.prepare(stageCommandDone, prepareWriting, server); err != nil {
 		return
 	}
 
