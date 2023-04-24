@@ -619,7 +619,7 @@ func (self *Conn) readConnect2() (err error) {
 	if err = self.pollCommand(); err != nil {
 		return
 	}
-	fmt.Printf("inside of readConnect %#v\n", self.commandname)
+	//fmt.Printf("inside of readConnect %#v\n", self.commandname)
 	if self.commandname != "connect" {
 		//err = fmt.Errorf("rtmp: first command is not connect")
 		self.Logger.Error("rtmp: first command is not connect")
@@ -679,7 +679,7 @@ func (self *Conn) readConnect2() (err error) {
 			return
 		}
 		if self.gotcommand {
-			fmt.Printf("inside of readConnect for loop : %#v\n", self.commandname)
+			//fmt.Printf("inside of readConnect for loop : %#v\n", self.commandname)
 			switch self.commandname {
 			// < createStream
 			case "createStream":
@@ -1467,7 +1467,7 @@ func (self *Conn) flushWrite() (err error) {
 }
 
 func (self *Conn) readChunk() (err error) {
-	fmt.Printf("check self.commandname %s, 00\n", self.commandname)
+	//fmt.Printf("check self.commandname %s, 00\n", self.commandname)
 	b := self.readbuf
 	n := 0
 	if _, err = io.ReadFull(self.bufr, b[:1]); err != nil {
@@ -1476,7 +1476,7 @@ func (self *Conn) readChunk() (err error) {
 	header := b[0]
 	n += 1
 
-	fmt.Printf("check self.commandname %s, 1\n", self.commandname)
+	//fmt.Printf("check self.commandname %s, 1\n", self.commandname)
 
 	var msghdrtype uint8
 	var csid uint32
@@ -1716,7 +1716,7 @@ func (self *Conn) handleCommandMsgAMF0(b []byte) (n int, err error) {
 		self.Logger.Error("rtmp: CommandMsgAMF0 command is not string")
 		return
 	}
-	fmt.Printf("self.commandname : %s", self.commandname)
+	//fmt.Printf("self.commandname : %s", self.commandname)
 	self.commandtransid, _ = transid.(float64)
 	self.commandobj, _ = obj.(flvio.AMFMap)
 	self.commandparams = []interface{}{}
