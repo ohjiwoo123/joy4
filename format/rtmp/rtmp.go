@@ -92,7 +92,7 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 		self.HandleConn(conn)
 	} else {
 		fmt.Println("Before conn.prepare")
-		if err = conn.prepare(stageCommandDone, 0); err != nil {
+		if err = conn.prepare(stageCommandDone, 0, self); err != nil {
 			return
 		}
 		if conn.playing {
@@ -887,8 +887,8 @@ func (self *Conn) connectPlay() (err error) {
 	return
 }
 
-func (self *Conn) ReadPacket(server *Server) (pkt av.Packet, err error) {
-	if err = self.prepare(stageCodecDataDone, prepareReading, server); err != nil {
+func (self *Conn) ReadPacket() (pkt av.Packet, err error) {
+	if err = self.prepare2(stageCodecDataDone, prepareReading); err != nil {
 		return
 	}
 
@@ -970,6 +970,60 @@ func (self *Conn) prepare(stage int, flags int, server *Server) (err error) {
 	return
 }
 
+func (self *Conn) prepare2(stage int, flags int) (err error) {
+	for self.stage < stage {
+		switch self.stage {
+		case 0:
+			if self.isserver {
+				fmt.Println("Check Before HandShaking self.IsServer")
+				if err = self.handshakeServer(); err != nil {
+					return
+				}
+			} else {
+				fmt.Println("Check Before HandShaking self.IsServer=false")
+				if err = self.handshakeClient(); err != nil {
+					return
+				}
+			}
+
+		case stageHandshakeDone:
+			if self.isserver {
+				fmt.Println("Check Before readConnect")
+				if err = self.readConnect(); err != nil {
+					return
+				}
+			} else {
+				if flags == prepareReading {
+					fmt.Println("Check Before connectPlay")
+					if err = self.connectPlay(); err != nil {
+						return
+					}
+				} else {
+					fmt.Println("Check Before connectPublish")
+					if err = self.connectPublish(); err != nil {
+						return
+					}
+				}
+			}
+
+		case stageCommandDone:
+			fmt.Println("case stageCommandDone")
+			fmt.Printf("flags:%#v", flags)
+			if flags == prepareReading {
+				if err = self.probe(); err != nil {
+					return
+				}
+			} else {
+				fmt.Println("case stageCommandDone else")
+				//err = fmt.Errorf("rtmp: call WriteHeader() before WritePacket()")
+				self.Logger.Error("rtmp: call WriteHeader() before WritePacket()")
+				return
+			}
+		}
+	}
+	return
+}
+
 func (self *Conn) Streams(server *Server) (streams []av.CodecData, err error) {
 	if err = self.prepare(stageCodecDataDone, prepareReading, server); err != nil {
 		return
@@ -978,8 +1032,8 @@ func (self *Conn) Streams(server *Server) (streams []av.CodecData, err error) {
 	return
 }
 
-func (self *Conn) WritePacket(pkt av.Packet, server *Server) (err error) {
-	if err = self.prepare(stageCodecDataDone, prepareWriting, server); err != nil {
+func (self *Conn) WritePacket(pkt av.Packet) (err error) {
+	if err = self.prepare2(stageCodecDataDone, prepareWriting); err != nil {
 		return
 	}
 
@@ -1005,8 +1059,8 @@ func (self *Conn) WriteTrailer() (err error) {
 	return
 }
 
-func (self *Conn) WriteHeader(streams []av.CodecData, server *Server) (err error) {
-	if err = self.prepare(stageCommandDone, prepareWriting, server); err != nil {
+func (self *Conn) WriteHeader(streams []av.CodecData) (err error) {
+	if err = self.prepare2(stageCommandDone, prepareWriting); err != nil {
 		return
 	}
 
