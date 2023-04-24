@@ -474,7 +474,7 @@ func (self *Conn) readConnect(server *Server) (err error) {
 			return
 		}
 		if self.gotcommand {
-			fmt.Printf("inside of readConnect for loop : %#v\n", self.commandname)
+			// fmt.Printf("inside of readConnect for loop : %#v\n", self.commandname)
 			switch self.commandname {
 			// < createStream
 			case "createStream":
