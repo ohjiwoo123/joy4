@@ -1209,8 +1209,8 @@ func (self *Conn) prepare2(stage int, flags int) (err error) {
 	return
 }
 
-func (self *Conn) Streams(server *Server) (streams []av.CodecData, err error) {
-	if err = self.prepare(stageCodecDataDone, prepareReading, server); err != nil {
+func (self *Conn) Streams() (streams []av.CodecData, err error) {
+	if err = self.prepare2(stageCodecDataDone, prepareReading); err != nil {
 		return
 	}
 	streams = self.streams
