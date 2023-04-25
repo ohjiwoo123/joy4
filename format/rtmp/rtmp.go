@@ -128,11 +128,7 @@ func (self *Server) ListenAndServe() (err error) {
 	if listener, err = net.ListenTCP("tcp", tcpaddr); err != nil {
 		return
 	}
-	self.Logger.Info("Listen Success")
-
-	if Debug {
-		self.Logger.Debugf("rtmp: server: listening on : %v", addr)
-	}
+	self.Logger.Infof("rtmp: server: listening on : %v", addr)
 
 	for {
 		var netconn net.Conn
@@ -141,11 +137,7 @@ func (self *Server) ListenAndServe() (err error) {
 		}
 		count++
 
-		self.Logger.Infof("Accept Success : %v", count)
-
-		if Debug {
-			//self.Logger.Debug("rtmp: server: accepted")
-		}
+		self.Logger.Infof("Accept Success cumulative count : %v", count)
 
 		conn := NewConn(netconn)
 		conn.Logger = self.Logger
@@ -154,9 +146,6 @@ func (self *Server) ListenAndServe() (err error) {
 			err := self.handleConn(conn)
 			if err != nil {
 				self.Logger.Infof("rtmp: server: client closed err: %v", err)
-			}
-			if Debug {
-				self.Logger.Debugf("rtmp: server: client closed err: %v", err)
 			}
 		}()
 	}
@@ -219,7 +208,7 @@ type Conn struct {
 	avtag       flvio.Tag
 
 	eventtype uint16
-	Logger    log.FieldLogger
+	Logger    *log.Logger
 }
 
 type txrxcount struct {
@@ -414,14 +403,11 @@ func (self *Conn) readConnect(server *Server) (err error) {
 	if err = self.pollCommand(); err != nil {
 		return
 	}
-	fmt.Printf("inside of readConnect %#v\n", self.commandname)
 	if self.commandname != "connect" {
-		//err = fmt.Errorf("rtmp: first command is not connect")
 		self.Logger.Error("rtmp: first command is not connect")
 		return
 	}
 	if self.commandobj == nil {
-		//err = fmt.Errorf("rtmp: connect command params invalid")
 		self.Logger.Error("rtmp: connect command params invalid")
 		return
 	}
@@ -429,8 +415,8 @@ func (self *Conn) readConnect(server *Server) (err error) {
 	var ok bool
 	var _app, _tcurl interface{}
 	if _app, ok = self.commandobj["app"]; !ok {
-		//err = fmt.Errorf("rtmp: `connect` params missing `app`")
 		self.Logger.Error("rtmp: `connect` params missing `app`")
+		fmt.Println("rtmp: `connect` params missing `app`")
 		return
 	}
 	connectpath, _ = _app.(string)
@@ -511,6 +497,7 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				// 스트림키를 가진 데이터타입과 비교하여 조건문에 해당하면 아래구문을 처리하게 해야 함
 
 				if server.KeyMap[publishpath] == true {
+					fmt.Println("inside of KeyMap[key]==true")
 					if err = self.writeCommandMsg(5, self.avmsgsid,
 						"onStatus", self.commandtransid, nil,
 						flvio.AMFMap{
@@ -522,8 +509,12 @@ func (self *Conn) readConnect(server *Server) (err error) {
 						self.Logger.Infof("write badname msg err : %#v", err)
 						return
 					}
+					self.Logger.Infof("write badname msg err : %#v", err)
+					fmt.Println("write badname msg err \n")
+					return
 				}
 
+				fmt.Println("Before setting of KeyMap[key]==true")
 				server.KeyMap[publishpath] = true
 				////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -837,9 +828,7 @@ func (self *Conn) checkCreateStreamResult() (ok bool, avmsgsid uint32) {
 }
 
 func (self *Conn) probe() (err error) {
-	fmt.Println("inside of start probe func!!")
 	for !self.prober.Probed() {
-		fmt.Println("inside of probe func!!")
 		var tag flvio.Tag
 		if tag, err = self.pollAVTag(); err != nil {
 			return
@@ -1334,7 +1323,6 @@ func (self *Conn) writeDataMsg(csid, msgsid uint32, args ...interface{}) (err er
 }
 
 func (self *Conn) writeAMF0Msg(msgtypeid uint8, csid, msgsid uint32, args ...interface{}) (err error) {
-	log.Info("writeAMF0Msg start")
 	size := 0
 	for _, arg := range args {
 		size += flvio.LenAMF0Val(arg)
@@ -1347,7 +1335,6 @@ func (self *Conn) writeAMF0Msg(msgtypeid uint8, csid, msgsid uint32, args ...int
 	}
 
 	_, err = self.bufw.Write(b[:n])
-	log.Info("writeAMF0Msg end")
 	return
 }
 
@@ -2079,13 +2066,11 @@ func Handler(h *avutil.RegisterHandler) {
 
 		select {
 		case err = <-waitstart:
-			fmt.Println("h.Server Muxer inside of Handler conn")
 			if err != nil {
 				return
 			}
 
 		case conn := <-waitconn:
-			fmt.Println("h.Server Muxer inside of Handler conn")
 			muxer = closeConn{Conn: conn, waitclose: waitclose}
 			return
 		}
@@ -2122,13 +2107,11 @@ func Handler(h *avutil.RegisterHandler) {
 
 		select {
 		case err = <-waitstart:
-			fmt.Println("h.Server Demuxer inside of Handler case err")
 			if err != nil {
 				return
 			}
 
 		case conn := <-waitconn:
-			fmt.Println("h.Server Demuxer inside of Handler conn")
 			demuxer = closeConn{Conn: conn, waitclose: waitclose}
 			return
 		}
