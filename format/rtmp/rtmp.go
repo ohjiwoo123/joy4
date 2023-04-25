@@ -17,6 +17,7 @@ import (
 	"github.com/nareix/joy4/format/flv"
 	"github.com/nareix/joy4/format/flv/flvio"
 	"github.com/nareix/joy4/utils/bits/pio"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -485,7 +486,7 @@ func (self *Conn) readConnect(server *Server) (err error) {
 						return
 					}
 					self.Logger.Infof("write badname msg err : %#v", err)
-					return
+					return errors.New("Cannot publish to this stream")
 				}
 
 				server.KeyMap[publishpath] = true
