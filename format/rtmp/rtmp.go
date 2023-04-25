@@ -485,6 +485,7 @@ func (self *Conn) readConnect(server *Server) (err error) {
 						return
 					}
 					self.Logger.Infof("write badname msg err : %#v", err)
+					panic("Stream Key is Already Published")
 					return
 				}
 
@@ -512,7 +513,7 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, publishpath)
-				self.Logger.Info("NetStream Publish Done, tcurl : %v, connectpath : %v,publishpath : %v", tcurl, connectpath, publishpath)
+				self.Logger.Infof("NetStream Publish Done, tcurl : %#v, connectpath : %#v,publishpath : %#v", tcurl, connectpath, publishpath)
 				self.publishing = true
 				self.reading = true
 				self.stage++
@@ -559,7 +560,7 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, playpath)
-				log.Infof("tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
+				self.Logger.Infof("Netstream.Play Start Done, tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
 				self.playing = true
 				self.writing = true
 				self.stage++
@@ -646,6 +647,7 @@ func (self *Conn) readConnect2() (err error) {
 				if err = self.flushWrite(); err != nil {
 					return
 				}
+				self.Logger.Info("rtmp: < createSteam Done")
 
 			// < publish("path")
 			case "publish":
@@ -688,6 +690,7 @@ func (self *Conn) readConnect2() (err error) {
 				self.publishing = true
 				self.reading = true
 				self.stage++
+				self.Logger.Infof("NetStream Publish Done, tcurl : %#v, connectpath : %#v,publishpath : %#v", tcurl, connectpath, publishpath)
 				return
 
 			// < play("path")
@@ -731,7 +734,7 @@ func (self *Conn) readConnect2() (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, playpath)
-				log.Infof("tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
+				self.Logger.Infof("Netstream.Play Start Done, tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
 				self.playing = true
 				self.writing = true
 				self.stage++
@@ -1069,7 +1072,6 @@ func (self *Conn) prepare(stage int, flags int, server *Server) (err error) {
 					}
 				}
 			}
-			self.Logger.Info("CreateStream, play or publish Done.")
 
 		case stageCommandDone:
 			if flags == prepareReading {
