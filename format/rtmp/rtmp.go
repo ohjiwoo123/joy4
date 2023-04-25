@@ -914,18 +914,12 @@ func (self *Conn) writeConnect(path string) (err error) {
 				}
 			}
 		}
-		log.Info("if xx else : self.gotcommand")
 	}
 
 	return
 }
 
 func (self *Conn) connectPublish() (err error) {
-	defer func() {
-		r := recover() //복구 및 에러 메시지 초기화
-		log.Info(r)    //에러 메시지 출력
-		log.Info("defer connectPublish")
-	}()
 	connectpath, publishpath := SplitPath(self.URL)
 
 	// publish path check
@@ -975,10 +969,7 @@ func (self *Conn) connectPublish() (err error) {
 	}
 
 	// > publish('app')
-	log.Info("rtmp: > publish('%s')\n")
-	if Debug {
-		log.Infof("rtmp: > publish('%s')\n", publishpath)
-	}
+	log.Infof("rtmp: > publish('%s')\n", publishpath)
 	if err = self.writeCommandMsg(8, self.avmsgsid, "publish", transid, nil, publishpath); err != nil {
 		log.Infof("There is Some Error with writeCommandMsg : %v", err)
 		return
