@@ -581,18 +581,18 @@ func (self *Conn) readConnect2() (err error) {
 		return
 	}
 	if self.commandname != "connect" {
-		self.Logger.Error("rtmp: first command is not connect")
+		log.Error("rtmp: first command is not connect")
 		return
 	}
 	if self.commandobj == nil {
-		self.Logger.Error("rtmp: connect command params invalid")
+		log.Error("rtmp: connect command params invalid")
 		return
 	}
 
 	var ok bool
 	var _app, _tcurl interface{}
 	if _app, ok = self.commandobj["app"]; !ok {
-		self.Logger.Error("rtmp: `connect` params missing `app`")
+		log.Error("rtmp: `connect` params missing `app`")
 		return
 	}
 	connectpath, _ = _app.(string)
@@ -647,16 +647,16 @@ func (self *Conn) readConnect2() (err error) {
 				if err = self.flushWrite(); err != nil {
 					return
 				}
-				self.Logger.Info("rtmp: < createSteam Done")
+				log.Info("rtmp: < createSteam Done")
 
 			// < publish("path")
 			case "publish":
 				if Debug {
-					self.Logger.Debug("rtmp: < publish")
+					log.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					self.Logger.Error("rtmp: publish params invalid")
+					log.Error("rtmp: publish params invalid")
 					return
 				}
 				publishpath, _ := self.commandparams[0].(string)
@@ -682,7 +682,7 @@ func (self *Conn) readConnect2() (err error) {
 				}
 
 				if cberr != nil {
-					self.Logger.Error("rtmp: OnPlayOrPublish check failed")
+					log.Error("rtmp: OnPlayOrPublish check failed")
 					return
 				}
 
@@ -690,17 +690,17 @@ func (self *Conn) readConnect2() (err error) {
 				self.publishing = true
 				self.reading = true
 				self.stage++
-				self.Logger.Infof("NetStream Publish Done, tcurl : %#v, connectpath : %#v,publishpath : %#v", tcurl, connectpath, publishpath)
+				log.Infof("NetStream Publish Done, tcurl : %#v, connectpath : %#v,publishpath : %#v", tcurl, connectpath, publishpath)
 				return
 
 			// < play("path")
 			case "play":
 				if Debug {
-					self.Logger.Debug("rtmp: < publish")
+					log.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					self.Logger.Error("rtmp: command play params invalid")
+					log.Error("rtmp: command play params invalid")
 					return
 				}
 				playpath, _ := self.commandparams[0].(string)
@@ -734,7 +734,7 @@ func (self *Conn) readConnect2() (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, playpath)
-				self.Logger.Infof("Netstream.Play Start Done, tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
+				log.Infof("Netstream.Play Start Done, tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
 				self.playing = true
 				self.writing = true
 				self.stage++
@@ -1101,7 +1101,7 @@ func (self *Conn) prepare2(stage int, flags int) (err error) {
 					return
 				}
 			}
-			self.Logger.Info("HandShaking Done.")
+			log.Info("HandShaking Done.")
 
 		case stageHandshakeDone:
 			if self.isserver {
@@ -1119,7 +1119,7 @@ func (self *Conn) prepare2(stage int, flags int) (err error) {
 					}
 				}
 			}
-			self.Logger.Info("CreateStream, play or publish Done.")
+			log.Info("CreateStream, play or publish Done.")
 
 		case stageCommandDone:
 			if flags == prepareReading {
@@ -1127,10 +1127,10 @@ func (self *Conn) prepare2(stage int, flags int) (err error) {
 					return
 				}
 			} else {
-				self.Logger.Error("rtmp: call WriteHeader() before WritePacket()")
+				log.Error("rtmp: call WriteHeader() before WritePacket()")
 				return
 			}
-			self.Logger.Info("Last Stage, stageCommandDone (MetaData Setting).")
+			log.Info("Last Stage, stageCommandDone (MetaData Setting).")
 		}
 	}
 	return
