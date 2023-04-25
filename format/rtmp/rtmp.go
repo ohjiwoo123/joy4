@@ -529,11 +529,10 @@ func (self *Conn) readConnect(server *Server) (err error) {
 							"description": "Already Published",
 						},
 					); err != nil {
-						log.Infof("write badname msg err : %#v", err)
+						log.Info("writeCommandMsg about Already Published Error")
 						return
 					}
-					log.Infof("write badname msg err : %#v", err)
-					return errors.New("Cannot publish to this stream")
+					return errors.New("write badname msg err, Cannot publish to this stream")
 				}
 
 				server.KeyMap[publishpath] = true
@@ -885,16 +884,13 @@ func (self *Conn) writeConnect(path string) (err error) {
 	}
 
 	for {
-		log.Info("before pollMsg insideof writeConnect")
 		if err = self.pollMsg(); err != nil {
 			log.Info(err)
 			return
 		}
 		if self.gotcommand {
-			log.Info("self.gotcommand")
 			// < _result("NetConnection.Connect.Success")
 			if self.commandname == "_result" {
-				log.Info("self.gotcommand1111")
 				var ok bool
 				var errmsg string
 				if ok, errmsg = self.checkConnectResult(); !ok {
@@ -907,7 +903,6 @@ func (self *Conn) writeConnect(path string) (err error) {
 				break
 			}
 		} else {
-			log.Info("self.gotcommand2222")
 			if self.msgtypeid == msgtypeidWindowAckSize {
 				if len(self.msgdata) == 4 {
 					self.readAckSize = pio.U32BE(self.msgdata)
@@ -1166,7 +1161,6 @@ func (self *Conn) prepare2(stage int, flags int) (err error) {
 					}
 				}
 			}
-			log.Info("CreateStream, play or publish Done.")
 
 		case stageCommandDone:
 			if flags == prepareReading {
