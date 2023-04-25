@@ -485,7 +485,6 @@ func (self *Conn) readConnect(server *Server) (err error) {
 						return
 					}
 					self.Logger.Infof("write badname msg err : %#v", err)
-					panic("Stream Key is Already Published")
 					return
 				}
 
