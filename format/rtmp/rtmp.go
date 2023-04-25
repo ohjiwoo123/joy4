@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"fmt"
-
 	"github.com/nareix/joy4/av"
 	"github.com/nareix/joy4/av/avutil"
 	"github.com/nareix/joy4/format/flv"
@@ -32,7 +30,6 @@ func ParseURL(uri string) (u *url.URL, err error) {
 		return
 	}
 	log.Infof("uri: %s", uri)
-	log.Infof("u.Host: %v", u.Host)
 	if _, _, serr := net.SplitHostPort(u.Host); serr != nil {
 		u.Host += ":1935"
 	}
@@ -41,7 +38,7 @@ func ParseURL(uri string) (u *url.URL, err error) {
 }
 
 func Dial(uri string) (conn *Conn, err error) {
-	fmt.Println("Dial Start")
+	log.Println("Dial Start")
 	return DialTimeout(uri, 0)
 }
 
@@ -50,19 +47,6 @@ func DialTimeout(uri string, timeout time.Duration) (conn *Conn, err error) {
 	if u, err = ParseURL(uri); err != nil {
 		return
 	}
-	// _, publishpath := SplitPath(u)
-	// if len(self.StreamKey) == 0 {
-	// 	self.StreamKey = append(self.StreamKey, publishpath)
-	// } else {
-	// 	for i, k := range self.StreamKey {
-	// 		if k == self.StreamKey[i] {
-	// 			log.Infof("There is Already Same Stream Key %s", k)
-	// 			panic("There is Already Same Stream Key")
-	// 		}
-	// 	}
-
-	// }
-	log.Infof("ParseUrl : %s", uri)
 
 	dailer := net.Dialer{Timeout: timeout}
 	var netconn net.Conn
@@ -88,20 +72,16 @@ type Server struct {
 
 func (self *Server) handleConn(conn *Conn) (err error) {
 	if self.HandleConn != nil {
-		fmt.Println("self.HandleConn is nil")
 		self.HandleConn(conn)
 	} else {
-		fmt.Println("Before conn.prepare")
 		if err = conn.prepare(stageCommandDone, 0, self); err != nil {
 			return
 		}
 		if conn.playing {
-			fmt.Println("Before conn.playing")
 			if self.HandlePlay != nil {
 				self.HandlePlay(conn)
 			}
 		} else if conn.publishing {
-			fmt.Println("Before conn.publishing")
 			if self.HandlePublish != nil {
 				self.HandlePublish(conn)
 			}
@@ -416,7 +396,6 @@ func (self *Conn) readConnect(server *Server) (err error) {
 	var _app, _tcurl interface{}
 	if _app, ok = self.commandobj["app"]; !ok {
 		self.Logger.Error("rtmp: `connect` params missing `app`")
-		fmt.Println("rtmp: `connect` params missing `app`")
 		return
 	}
 	connectpath, _ = _app.(string)
@@ -460,11 +439,9 @@ func (self *Conn) readConnect(server *Server) (err error) {
 			return
 		}
 		if self.gotcommand {
-			// fmt.Printf("inside of readConnect for loop : %#v\n", self.commandname)
 			switch self.commandname {
 			// < createStream
 			case "createStream":
-				fmt.Println("rtmp: < createSteam(readConnect)")
 				self.avmsgsid = uint32(1)
 				// > _result(streamid)
 				if err = self.writeCommandMsg(3, 0, "_result", self.commandtransid, nil, self.avmsgsid); err != nil {
@@ -473,16 +450,15 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				if err = self.flushWrite(); err != nil {
 					return
 				}
+				self.Logger.Info("rtmp: < createSteam Done")
 
 			// < publish("path")
 			case "publish":
-				fmt.Println("rtmp: < publish(readConnect)")
 				if Debug {
 					self.Logger.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					//err = fmt.Errorf("rtmp: publish params invalid")
 					self.Logger.Error("rtmp: publish params invalid")
 					return
 				}
@@ -497,7 +473,6 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				// 스트림키를 가진 데이터타입과 비교하여 조건문에 해당하면 아래구문을 처리하게 해야 함
 
 				if server.KeyMap[publishpath] == true {
-					fmt.Println("inside of KeyMap[key]==true")
 					if err = self.writeCommandMsg(5, self.avmsgsid,
 						"onStatus", self.commandtransid, nil,
 						flvio.AMFMap{
@@ -510,11 +485,9 @@ func (self *Conn) readConnect(server *Server) (err error) {
 						return
 					}
 					self.Logger.Infof("write badname msg err : %#v", err)
-					fmt.Println("write badname msg err \n")
 					return
 				}
 
-				fmt.Println("Before setting of KeyMap[key]==true")
 				server.KeyMap[publishpath] = true
 				////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -534,14 +507,12 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				}
 
 				if cberr != nil {
-					//err = fmt.Errorf("rtmp: OnPlayOrPublish check failed")
 					self.Logger.Error("rtmp: OnPlayOrPublish check failed")
 					return
 				}
 
 				self.URL = createURL(tcurl, connectpath, publishpath)
-				//pubPathList =
-				fmt.Printf("tcurl : %#v, connectpath : %#v,publishpath : %#v ", tcurl, connectpath, publishpath)
+				self.Logger.Info("NetStream Publish Done, tcurl : %v, connectpath : %v,publishpath : %v", tcurl, connectpath, publishpath)
 				self.publishing = true
 				self.reading = true
 				self.stage++
@@ -549,13 +520,11 @@ func (self *Conn) readConnect(server *Server) (err error) {
 
 			// < play("path")
 			case "play":
-				fmt.Println("rtmp: < play(readConnect)")
 				if Debug {
 					self.Logger.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					//err = fmt.Errorf("rtmp: command play params invalid")
 					self.Logger.Error("rtmp: command play params invalid")
 					return
 				}
@@ -610,14 +579,11 @@ func (self *Conn) readConnect2() (err error) {
 	if err = self.pollCommand(); err != nil {
 		return
 	}
-	//fmt.Printf("inside of readConnect %#v\n", self.commandname)
 	if self.commandname != "connect" {
-		//err = fmt.Errorf("rtmp: first command is not connect")
 		self.Logger.Error("rtmp: first command is not connect")
 		return
 	}
 	if self.commandobj == nil {
-		//err = fmt.Errorf("rtmp: connect command params invalid")
 		self.Logger.Error("rtmp: connect command params invalid")
 		return
 	}
@@ -625,7 +591,6 @@ func (self *Conn) readConnect2() (err error) {
 	var ok bool
 	var _app, _tcurl interface{}
 	if _app, ok = self.commandobj["app"]; !ok {
-		//err = fmt.Errorf("rtmp: `connect` params missing `app`")
 		self.Logger.Error("rtmp: `connect` params missing `app`")
 		return
 	}
@@ -670,11 +635,9 @@ func (self *Conn) readConnect2() (err error) {
 			return
 		}
 		if self.gotcommand {
-			//fmt.Printf("inside of readConnect for loop : %#v\n", self.commandname)
 			switch self.commandname {
 			// < createStream
 			case "createStream":
-				fmt.Println("rtmp: < createSteam(readConnect)")
 				self.avmsgsid = uint32(1)
 				// > _result(streamid)
 				if err = self.writeCommandMsg(3, 0, "_result", self.commandtransid, nil, self.avmsgsid); err != nil {
@@ -686,13 +649,11 @@ func (self *Conn) readConnect2() (err error) {
 
 			// < publish("path")
 			case "publish":
-				fmt.Println("rtmp: < publish(readConnect)")
 				if Debug {
 					self.Logger.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					//err = fmt.Errorf("rtmp: publish params invalid")
 					self.Logger.Error("rtmp: publish params invalid")
 					return
 				}
@@ -719,14 +680,11 @@ func (self *Conn) readConnect2() (err error) {
 				}
 
 				if cberr != nil {
-					//err = fmt.Errorf("rtmp: OnPlayOrPublish check failed")
 					self.Logger.Error("rtmp: OnPlayOrPublish check failed")
 					return
 				}
 
 				self.URL = createURL(tcurl, connectpath, publishpath)
-				//pubPathList =
-				fmt.Printf("tcurl : %#v, connectpath : %#v,publishpath : %#v ", tcurl, connectpath, publishpath)
 				self.publishing = true
 				self.reading = true
 				self.stage++
@@ -734,13 +692,11 @@ func (self *Conn) readConnect2() (err error) {
 
 			// < play("path")
 			case "play":
-				fmt.Println("rtmp: < play(readConnect)")
 				if Debug {
 					self.Logger.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					//err = fmt.Errorf("rtmp: command play params invalid")
 					self.Logger.Error("rtmp: command play params invalid")
 					return
 				}
@@ -892,12 +848,10 @@ func (self *Conn) writeConnect(path string) (err error) {
 				var ok bool
 				var errmsg string
 				if ok, errmsg = self.checkConnectResult(); !ok {
-					//err = fmt.Errorf("rtmp: command connect failed: %s", errmsg)
 					log.Errorf("rtmp: command connect failed: %s", errmsg)
 					return
 				}
 				if Debug {
-					//fmt.Printf("rtmp: < _result() of connect\n")
 					log.Debug("rtmp: < _result() of connect\n")
 				}
 				break
@@ -942,9 +896,7 @@ func (self *Conn) connectPublish() (err error) {
 
 	// > createStream()
 	log.Info("rtmp: > createStream()\n")
-	if Debug {
-		log.Info("rtmp: > createStream()\n")
-	}
+
 	if err = self.writeCommandMsg(3, 0, "createStream", transid, nil); err != nil {
 		log.Info("There is Some Error with writeCommandMsg")
 		log.Info(err)
@@ -969,7 +921,6 @@ func (self *Conn) connectPublish() (err error) {
 			if self.commandname == "_result" {
 				var ok bool
 				if ok, self.avmsgsid = self.checkCreateStreamResult(); !ok {
-					//err = fmt.Errorf("rtmp: createStream command failed")
 					log.Error("rtmp: createStream command failed")
 					return
 				}
@@ -984,13 +935,13 @@ func (self *Conn) connectPublish() (err error) {
 		log.Infof("rtmp: > publish('%s')\n", publishpath)
 	}
 	if err = self.writeCommandMsg(8, self.avmsgsid, "publish", transid, nil, publishpath); err != nil {
-		log.Infof("There is Some Error with writeCommandMsg", err)
+		log.Infof("There is Some Error with writeCommandMsg : %v", err)
 		return
 	}
 	transid++
 
 	if err = self.flushWrite(); err != nil {
-		log.Infof("There is Some Error with flushWrite", err)
+		log.Infof("There is Some Error with flushWrite : %v", err)
 		return
 	}
 
@@ -1009,7 +960,6 @@ func (self *Conn) connectPlay() (err error) {
 
 	// > createStream()
 	if Debug {
-		//fmt.Printf("rtmp: > createStream()\n")
 		self.Logger.Info("rtmp: > createStream()\n")
 	}
 	if err = self.writeCommandMsg(3, 0, "createStream", 2, nil); err != nil {
@@ -1034,7 +984,6 @@ func (self *Conn) connectPlay() (err error) {
 			if self.commandname == "_result" {
 				var ok bool
 				if ok, self.avmsgsid = self.checkCreateStreamResult(); !ok {
-					//err = fmt.Errorf("rtmp: createStream command failed")
 					self.Logger.Error("rtmp: createStream command failed")
 					return
 				}
@@ -1045,8 +994,7 @@ func (self *Conn) connectPlay() (err error) {
 
 	// > play('app')
 	if Debug {
-		//fmt.Printf("rtmp: > play('%s')\n", playpath)
-		self.Logger.Infof("rtmp: > play('%s')\n", playpath)
+		self.Logger.Infof("rtmp: > play('%s')", playpath)
 	}
 	if err = self.writeCommandMsg(8, self.avmsgsid, "play", 0, nil, playpath); err != nil {
 		return
@@ -1095,50 +1043,44 @@ func (self *Conn) prepare(stage int, flags int, server *Server) (err error) {
 		switch self.stage {
 		case 0:
 			if self.isserver {
-				fmt.Println("Check Before HandShaking self.IsServer")
 				if err = self.handshakeServer(); err != nil {
 					return
 				}
 			} else {
-				fmt.Println("Check Before HandShaking self.IsServer=false")
 				if err = self.handshakeClient(); err != nil {
 					return
 				}
 			}
+			self.Logger.Info("HandShaking Done.")
 
 		case stageHandshakeDone:
 			if self.isserver {
-				fmt.Println("Check Before readConnect")
 				if err = self.readConnect(server); err != nil {
 					return
 				}
 			} else {
 				if flags == prepareReading {
-					fmt.Println("Check Before connectPlay")
 					if err = self.connectPlay(); err != nil {
 						return
 					}
 				} else {
-					fmt.Println("Check Before connectPublish")
 					if err = self.connectPublish(); err != nil {
 						return
 					}
 				}
 			}
+			self.Logger.Info("CreateStream, play or publish Done.")
 
 		case stageCommandDone:
-			fmt.Println("case stageCommandDone")
-			fmt.Printf("flags:%#v", flags)
 			if flags == prepareReading {
 				if err = self.probe(); err != nil {
 					return
 				}
 			} else {
-				fmt.Println("case stageCommandDone else")
-				//err = fmt.Errorf("rtmp: call WriteHeader() before WritePacket()")
 				self.Logger.Error("rtmp: call WriteHeader() before WritePacket()")
 				return
 			}
+			self.Logger.Info("Last Stage, stageCommandDone (MetaData Setting).")
 		}
 	}
 	return
@@ -1149,50 +1091,44 @@ func (self *Conn) prepare2(stage int, flags int) (err error) {
 		switch self.stage {
 		case 0:
 			if self.isserver {
-				fmt.Println("Check Before HandShaking self.IsServer")
 				if err = self.handshakeServer(); err != nil {
 					return
 				}
 			} else {
-				fmt.Println("Check Before HandShaking self.IsServer=false")
 				if err = self.handshakeClient(); err != nil {
 					return
 				}
 			}
+			self.Logger.Info("HandShaking Done.")
 
 		case stageHandshakeDone:
 			if self.isserver {
-				fmt.Println("Check Before readConnect")
 				if err = self.readConnect2(); err != nil {
 					return
 				}
 			} else {
 				if flags == prepareReading {
-					fmt.Println("Check Before connectPlay")
 					if err = self.connectPlay(); err != nil {
 						return
 					}
 				} else {
-					fmt.Println("Check Before connectPublish")
 					if err = self.connectPublish(); err != nil {
 						return
 					}
 				}
 			}
+			self.Logger.Info("CreateStream, play or publish Done.")
 
 		case stageCommandDone:
-			fmt.Println("case stageCommandDone")
-			fmt.Printf("flags:%#v", flags)
 			if flags == prepareReading {
 				if err = self.probe(); err != nil {
 					return
 				}
 			} else {
-				fmt.Println("case stageCommandDone else")
-				//err = fmt.Errorf("rtmp: call WriteHeader() before WritePacket()")
 				self.Logger.Error("rtmp: call WriteHeader() before WritePacket()")
 				return
 			}
+			self.Logger.Info("Last Stage, stageCommandDone (MetaData Setting).")
 		}
 	}
 	return
@@ -1215,7 +1151,6 @@ func (self *Conn) WritePacket(pkt av.Packet) (err error) {
 	tag, timestamp := flv.PacketToTag(pkt, stream)
 
 	if Debug {
-		//fmt.Println("rtmp: WritePacket", pkt.Idx, pkt.Time, pkt.CompositionTime)
 		self.Logger.Infof("rtmp: WritePacket pkt idx:%v, pky time: %v pkt CompositionTime : %v", pkt.Idx, pkt.Time, pkt.CompositionTime)
 	}
 
@@ -1438,8 +1373,6 @@ func (self *Conn) fillChunkHeader(b []byte, csid uint32, timestamp int32, msgtyp
 	}
 
 	if Debug {
-		fmt.Printf("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
-		//fmt.Printf("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
 		self.Logger.Infof("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
 	}
 
@@ -1454,7 +1387,6 @@ func (self *Conn) flushWrite() (err error) {
 }
 
 func (self *Conn) readChunk() (err error) {
-	//fmt.Printf("check self.commandname %s, 00\n", self.commandname)
 	b := self.readbuf
 	n := 0
 	if _, err = io.ReadFull(self.bufr, b[:1]); err != nil {
@@ -1462,8 +1394,6 @@ func (self *Conn) readChunk() (err error) {
 	}
 	header := b[0]
 	n += 1
-
-	//fmt.Printf("check self.commandname %s, 1\n", self.commandname)
 
 	var msghdrtype uint8
 	var csid uint32
@@ -1509,7 +1439,6 @@ func (self *Conn) readChunk() (err error) {
 		//
 		//       Figure 9 Chunk Message Header – Type 0
 		if cs.msgdataleft != 0 {
-			//err = fmt.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			self.Logger.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			return
 		}
@@ -1547,7 +1476,6 @@ func (self *Conn) readChunk() (err error) {
 		//
 		//       Figure 10 Chunk Message Header – Type 1
 		if cs.msgdataleft != 0 {
-			//err = fmt.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			self.Logger.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			return
 		}
@@ -1583,7 +1511,6 @@ func (self *Conn) readChunk() (err error) {
 		//
 		//       Figure 11 Chunk Message Header – Type 2
 		if cs.msgdataleft != 0 {
-			//err = fmt.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			self.Logger.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			return
 		}
@@ -1636,7 +1563,6 @@ func (self *Conn) readChunk() (err error) {
 		}
 
 	default:
-		//err = fmt.Errorf("rtmp: invalid chunk msg header type=%d", msghdrtype)
 		self.Logger.Errorf("rtmp: invalid chunk msg header type=%d", msghdrtype)
 		return
 	}
@@ -1661,7 +1587,6 @@ func (self *Conn) readChunk() (err error) {
 	if cs.msgdataleft == 0 {
 		if Debug {
 			self.Logger.Info("rtmp: chunk data")
-			//self.Logger.Info(hex.Dump(cs.msgdata))
 		}
 
 		if err = self.handleMsg(cs.timenow, cs.msgsid, cs.msgtypeid, cs.msgdata); err != nil {
@@ -1699,11 +1624,9 @@ func (self *Conn) handleCommandMsgAMF0(b []byte) (n int, err error) {
 
 	var ok bool
 	if self.commandname, ok = name.(string); !ok {
-		//err = fmt.Errorf("rtmp: CommandMsgAMF0 command is not string")
 		self.Logger.Error("rtmp: CommandMsgAMF0 command is not string")
 		return
 	}
-	//fmt.Printf("self.commandname : %s", self.commandname)
 	self.commandtransid, _ = transid.(float64)
 	self.commandobj, _ = obj.(flvio.AMFMap)
 	self.commandparams = []interface{}{}
@@ -1716,7 +1639,6 @@ func (self *Conn) handleCommandMsgAMF0(b []byte) (n int, err error) {
 		self.commandparams = append(self.commandparams, obj)
 	}
 	if n < len(b) {
-		//err = fmt.Errorf("rtmp: CommandMsgAMF0 left bytes=%d", len(b)-n)
 		self.Logger.Errorf("rtmp: CommandMsgAMF0 left bytes=%d", len(b)-n)
 		return
 	}
@@ -1738,7 +1660,6 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 
 	case msgtypeidCommandMsgAMF3:
 		if len(msgdata) < 1 {
-			//err = fmt.Errorf("rtmp: short packet of CommandMsgAMF3")
 			self.Logger.Error("rtmp: short packet of CommandMsgAMF3")
 			return
 		}
@@ -1749,7 +1670,6 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 
 	case msgtypeidUserControl:
 		if len(msgdata) < 2 {
-			//err = fmt.Errorf("rtmp: short packet of UserControl")
 			self.Logger.Error("rtmp: short packet of UserControl")
 			return
 		}
@@ -1768,7 +1688,6 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 			self.datamsgvals = append(self.datamsgvals, obj)
 		}
 		if n < len(b) {
-			//err = fmt.Errorf("rtmp: DataMsgAMF0 left bytes=%d", len(b)-n)
 			self.Logger.Errorf("rtmp: DataMsgAMF0 left bytes=%d", len(b)-n)
 			return
 		}
@@ -1802,7 +1721,6 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 
 	case msgtypeidSetChunkSize:
 		if len(msgdata) < 4 {
-			//err = fmt.Errorf("rtmp: short packet of SetChunkSize")
 			self.Logger.Error("rtmp: short packet of SetChunkSize")
 			return
 		}
@@ -1926,7 +1844,6 @@ func (self *Conn) handshakeClient() (err error) {
 	}
 
 	if Debug {
-		//fmt.Println("rtmp: handshakeClient: server version", S1[4], S1[5], S1[6], S1[7])
 		self.Logger.Debugf("rtmp: handshakeClient: server version %v %v %v %v", S1[4], S1[5], S1[6], S1[7])
 	}
 
@@ -1965,7 +1882,6 @@ func (self *Conn) handshakeServer() (err error) {
 		return
 	}
 	if C0[0] != 3 {
-		//err = fmt.Errorf("rtmp: handshake version=%d invalid", C0[0])
 		self.Logger.Errorf("rtmp: handshake version=%d invalid", C0[0])
 		return
 	}
