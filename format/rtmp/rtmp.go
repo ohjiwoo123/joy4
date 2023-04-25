@@ -6,12 +6,15 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"io"
 	"net"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
+	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
 	"github.com/nareix/joy4/av"
 	"github.com/nareix/joy4/av/avutil"
 	"github.com/nareix/joy4/format/flv"
@@ -22,6 +25,50 @@ import (
 )
 
 var Debug bool
+
+const LOG_NAME = "rtmp_serv.log"
+
+func init() {
+	dir, err := os.Getwd()
+
+	if err != nil {
+		log.Errorln("Failed Getwd(): %s", err)
+		//return
+	}
+	/**
+	* @brief : rotatelogs의 New 함수
+	* @details : New creates a new RotateLogs object. A log filename pattern
+				 must be passed. Optional `Option` parameters may be passed
+	* @param args : (pattern string, options ...Option)
+	* @return : (*RotateLogs, error)
+	*/
+	logf, err := rotatelogs.New(
+		fmt.Sprintf("%s/logs/%s.%s", dir, LOG_NAME, "%Y%m%d%H%M%S"),
+		rotatelogs.WithRotationTime(24*time.Hour),
+	)
+
+	// Fork writing into two outputs
+	multiWriter := io.MultiWriter(os.Stderr, logf)
+
+	logFormatter := new(log.TextFormatter)
+	logFormatter.TimestampFormat = "2006-01-02 15:04:05.000"
+	logFormatter.FullTimestamp = true
+
+	log.SetFormatter(logFormatter)
+	//log.SetLevel(log.InfoLevel)
+
+	/**
+	* @brief : logrus의 SetLevel 함수
+	* @details : Trace, Debug, Info, Warn, Error, Fatal, Panic Level이 있다.
+				 Debug Level은 Info, Warning, Error Fatal 4가지 레벨이 포함된다.
+	* @param args : logger *Logger
+	* @return : level
+	*/
+	//log.SetLevel(log.DebugLevel)
+	log.SetOutput(multiWriter)
+
+	//log.Info("hihi")
+}
 
 // pubPathList := make([]string, 500)
 // pubPathCount = 0
@@ -100,8 +147,8 @@ func (self *Server) ListenAndServe() (err error) {
 	}
 	var tcpaddr *net.TCPAddr
 	if tcpaddr, err = net.ResolveTCPAddr("tcp", addr); err != nil {
-		//err = self.Logger.Errorf("rtmp: ListenAndServe: %s", err)
-		self.Logger.Errorf("rtmp: ListenAndServe: %v", err)
+		//err = log.Errorf("rtmp: ListenAndServe: %s", err)
+		log.Errorf("rtmp: ListenAndServe: %v", err)
 		return
 	}
 
@@ -109,7 +156,7 @@ func (self *Server) ListenAndServe() (err error) {
 	if listener, err = net.ListenTCP("tcp", tcpaddr); err != nil {
 		return
 	}
-	self.Logger.Infof("rtmp: server: listening on : %v", addr)
+	log.Infof("rtmp: server: listening on : %v", addr)
 
 	for {
 		var netconn net.Conn
@@ -118,15 +165,15 @@ func (self *Server) ListenAndServe() (err error) {
 		}
 		count++
 
-		self.Logger.Infof("Accept Success cumulative count : %v", count)
+		log.Infof("Accept Success cumulative count : %v", count)
 
 		conn := NewConn(netconn)
-		conn.Logger = self.Logger
+		//conn.Logger = self.Logger
 		conn.isserver = true
 		go func() {
 			err := self.handleConn(conn)
 			if err != nil {
-				self.Logger.Infof("rtmp: server: client closed err: %v", err)
+				log.Infof("rtmp: server: client closed err: %v", err)
 			}
 		}()
 	}
@@ -385,18 +432,18 @@ func (self *Conn) readConnect(server *Server) (err error) {
 		return
 	}
 	if self.commandname != "connect" {
-		self.Logger.Error("rtmp: first command is not connect")
+		log.Error("rtmp: first command is not connect")
 		return
 	}
 	if self.commandobj == nil {
-		self.Logger.Error("rtmp: connect command params invalid")
+		log.Error("rtmp: connect command params invalid")
 		return
 	}
 
 	var ok bool
 	var _app, _tcurl interface{}
 	if _app, ok = self.commandobj["app"]; !ok {
-		self.Logger.Error("rtmp: `connect` params missing `app`")
+		log.Error("rtmp: `connect` params missing `app`")
 		return
 	}
 	connectpath, _ = _app.(string)
@@ -451,16 +498,16 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				if err = self.flushWrite(); err != nil {
 					return
 				}
-				self.Logger.Info("rtmp: < createSteam Done")
+				log.Info("rtmp: < createSteam Done")
 
 			// < publish("path")
 			case "publish":
 				if Debug {
-					self.Logger.Debug("rtmp: < publish")
+					log.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					self.Logger.Error("rtmp: publish params invalid")
+					log.Error("rtmp: publish params invalid")
 					return
 				}
 				publishpath, _ := self.commandparams[0].(string)
@@ -482,10 +529,10 @@ func (self *Conn) readConnect(server *Server) (err error) {
 							"description": "Already Published",
 						},
 					); err != nil {
-						self.Logger.Infof("write badname msg err : %#v", err)
+						log.Infof("write badname msg err : %#v", err)
 						return
 					}
-					self.Logger.Infof("write badname msg err : %#v", err)
+					log.Infof("write badname msg err : %#v", err)
 					return errors.New("Cannot publish to this stream")
 				}
 
@@ -508,12 +555,12 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				}
 
 				if cberr != nil {
-					self.Logger.Error("rtmp: OnPlayOrPublish check failed")
+					log.Error("rtmp: OnPlayOrPublish check failed")
 					return
 				}
 
 				self.URL = createURL(tcurl, connectpath, publishpath)
-				self.Logger.Infof("NetStream Publish Done, tcurl : %#v, connectpath : %#v,publishpath : %#v", tcurl, connectpath, publishpath)
+				log.Infof("NetStream Publish Done, tcurl : %#v, connectpath : %#v,publishpath : %#v", tcurl, connectpath, publishpath)
 				self.publishing = true
 				self.reading = true
 				self.stage++
@@ -522,11 +569,11 @@ func (self *Conn) readConnect(server *Server) (err error) {
 			// < play("path")
 			case "play":
 				if Debug {
-					self.Logger.Debug("rtmp: < publish")
+					log.Debug("rtmp: < publish")
 				}
 
 				if len(self.commandparams) < 1 {
-					self.Logger.Error("rtmp: command play params invalid")
+					log.Error("rtmp: command play params invalid")
 					return
 				}
 				playpath, _ := self.commandparams[0].(string)
@@ -560,7 +607,7 @@ func (self *Conn) readConnect(server *Server) (err error) {
 				}
 
 				self.URL = createURL(tcurl, connectpath, playpath)
-				self.Logger.Infof("Netstream.Play Start Done, tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
+				log.Infof("Netstream.Play Start Done, tcurl : %#v, connectpath : %#v,playpath : %#v ", tcurl, connectpath, playpath)
 				self.playing = true
 				self.writing = true
 				self.stage++
@@ -809,7 +856,7 @@ func (self *Conn) writeConnect(path string) (err error) {
 
 	// > connect("app")
 	if Debug {
-		self.Logger.Debugf("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
+		log.Debugf("rtmp: > connect('%s') host=%s\n", path, self.URL.Host)
 	}
 
 	log.Infof("rtmp: > connect('%s') host=%s\n , self.URL %s", path, self.URL.Host, self.URL)
@@ -963,7 +1010,7 @@ func (self *Conn) connectPlay() (err error) {
 
 	// > createStream()
 	if Debug {
-		self.Logger.Info("rtmp: > createStream()\n")
+		log.Info("rtmp: > createStream()\n")
 	}
 	if err = self.writeCommandMsg(3, 0, "createStream", 2, nil); err != nil {
 		return
@@ -987,7 +1034,7 @@ func (self *Conn) connectPlay() (err error) {
 			if self.commandname == "_result" {
 				var ok bool
 				if ok, self.avmsgsid = self.checkCreateStreamResult(); !ok {
-					self.Logger.Error("rtmp: createStream command failed")
+					log.Error("rtmp: createStream command failed")
 					return
 				}
 				break
@@ -997,7 +1044,7 @@ func (self *Conn) connectPlay() (err error) {
 
 	// > play('app')
 	if Debug {
-		self.Logger.Infof("rtmp: > play('%s')", playpath)
+		log.Infof("rtmp: > play('%s')", playpath)
 	}
 	if err = self.writeCommandMsg(8, self.avmsgsid, "play", 0, nil, playpath); err != nil {
 		return
@@ -1054,7 +1101,7 @@ func (self *Conn) prepare(stage int, flags int, server *Server) (err error) {
 					return
 				}
 			}
-			self.Logger.Info("HandShaking Done.")
+			log.Info("HandShaking Done.")
 
 		case stageHandshakeDone:
 			if self.isserver {
@@ -1079,10 +1126,10 @@ func (self *Conn) prepare(stage int, flags int, server *Server) (err error) {
 					return
 				}
 			} else {
-				self.Logger.Error("rtmp: call WriteHeader() before WritePacket()")
+				log.Error("rtmp: call WriteHeader() before WritePacket()")
 				return
 			}
-			self.Logger.Info("Last Stage, stageCommandDone (MetaData Setting).")
+			log.Info("Last Stage, stageCommandDone (MetaData Setting).")
 		}
 	}
 	return
@@ -1153,7 +1200,7 @@ func (self *Conn) WritePacket(pkt av.Packet) (err error) {
 	tag, timestamp := flv.PacketToTag(pkt, stream)
 
 	if Debug {
-		self.Logger.Infof("rtmp: WritePacket pkt idx:%v, pky time: %v pkt CompositionTime : %v", pkt.Idx, pkt.Time, pkt.CompositionTime)
+		log.Infof("rtmp: WritePacket pkt idx:%v, pky time: %v pkt CompositionTime : %v", pkt.Idx, pkt.Time, pkt.CompositionTime)
 	}
 
 	if err = self.writeAVTag(tag, int32(timestamp)); err != nil {
@@ -1375,7 +1422,7 @@ func (self *Conn) fillChunkHeader(b []byte, csid uint32, timestamp int32, msgtyp
 	}
 
 	if Debug {
-		self.Logger.Infof("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
+		log.Infof("rtmp: write chunk msgdatalen=%d msgsid=%d\n", msgdatalen, msgsid)
 	}
 
 	return
@@ -1441,7 +1488,7 @@ func (self *Conn) readChunk() (err error) {
 		//
 		//       Figure 9 Chunk Message Header – Type 0
 		if cs.msgdataleft != 0 {
-			self.Logger.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
+			log.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			return
 		}
 		h := b[:11]
@@ -1478,7 +1525,7 @@ func (self *Conn) readChunk() (err error) {
 		//
 		//       Figure 10 Chunk Message Header – Type 1
 		if cs.msgdataleft != 0 {
-			self.Logger.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
+			log.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			return
 		}
 		h := b[:7]
@@ -1513,7 +1560,7 @@ func (self *Conn) readChunk() (err error) {
 		//
 		//       Figure 11 Chunk Message Header – Type 2
 		if cs.msgdataleft != 0 {
-			self.Logger.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
+			log.Errorf("rtmp: chunk msgdataleft=%d invalid", cs.msgdataleft)
 			return
 		}
 		h := b[:3]
@@ -1565,7 +1612,7 @@ func (self *Conn) readChunk() (err error) {
 		}
 
 	default:
-		self.Logger.Errorf("rtmp: invalid chunk msg header type=%d", msghdrtype)
+		log.Errorf("rtmp: invalid chunk msg header type=%d", msghdrtype)
 		return
 	}
 
@@ -1582,13 +1629,13 @@ func (self *Conn) readChunk() (err error) {
 	cs.msgdataleft -= uint32(size)
 
 	if Debug {
-		self.Logger.Infof("rtmp: chunk msgsid=%d msgtypeid=%d msghdrtype=%d len=%d left=%d\n",
+		log.Infof("rtmp: chunk msgsid=%d msgtypeid=%d msghdrtype=%d len=%d left=%d\n",
 			cs.msgsid, cs.msgtypeid, cs.msghdrtype, cs.msgdatalen, cs.msgdataleft)
 	}
 
 	if cs.msgdataleft == 0 {
 		if Debug {
-			self.Logger.Info("rtmp: chunk data")
+			log.Info("rtmp: chunk data")
 		}
 
 		if err = self.handleMsg(cs.timenow, cs.msgsid, cs.msgtypeid, cs.msgdata); err != nil {
@@ -1626,7 +1673,7 @@ func (self *Conn) handleCommandMsgAMF0(b []byte) (n int, err error) {
 
 	var ok bool
 	if self.commandname, ok = name.(string); !ok {
-		self.Logger.Error("rtmp: CommandMsgAMF0 command is not string")
+		log.Error("rtmp: CommandMsgAMF0 command is not string")
 		return
 	}
 	self.commandtransid, _ = transid.(float64)
@@ -1641,7 +1688,7 @@ func (self *Conn) handleCommandMsgAMF0(b []byte) (n int, err error) {
 		self.commandparams = append(self.commandparams, obj)
 	}
 	if n < len(b) {
-		self.Logger.Errorf("rtmp: CommandMsgAMF0 left bytes=%d", len(b)-n)
+		log.Errorf("rtmp: CommandMsgAMF0 left bytes=%d", len(b)-n)
 		return
 	}
 
@@ -1662,7 +1709,7 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 
 	case msgtypeidCommandMsgAMF3:
 		if len(msgdata) < 1 {
-			self.Logger.Error("rtmp: short packet of CommandMsgAMF3")
+			log.Error("rtmp: short packet of CommandMsgAMF3")
 			return
 		}
 		// skip first byte
@@ -1672,7 +1719,7 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 
 	case msgtypeidUserControl:
 		if len(msgdata) < 2 {
-			self.Logger.Error("rtmp: short packet of UserControl")
+			log.Error("rtmp: short packet of UserControl")
 			return
 		}
 		self.eventtype = pio.U16BE(msgdata)
@@ -1690,7 +1737,7 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 			self.datamsgvals = append(self.datamsgvals, obj)
 		}
 		if n < len(b) {
-			self.Logger.Errorf("rtmp: DataMsgAMF0 left bytes=%d", len(b)-n)
+			log.Errorf("rtmp: DataMsgAMF0 left bytes=%d", len(b)-n)
 			return
 		}
 
@@ -1723,7 +1770,7 @@ func (self *Conn) handleMsg(timestamp uint32, msgsid uint32, msgtypeid uint8, ms
 
 	case msgtypeidSetChunkSize:
 		if len(msgdata) < 4 {
-			self.Logger.Error("rtmp: short packet of SetChunkSize")
+			log.Error("rtmp: short packet of SetChunkSize")
 			return
 		}
 		self.readMaxChunkSize = int(pio.U32BE(msgdata))
@@ -1846,7 +1893,7 @@ func (self *Conn) handshakeClient() (err error) {
 	}
 
 	if Debug {
-		self.Logger.Debugf("rtmp: handshakeClient: server version %v %v %v %v", S1[4], S1[5], S1[6], S1[7])
+		log.Debugf("rtmp: handshakeClient: server version %v %v %v %v", S1[4], S1[5], S1[6], S1[7])
 	}
 
 	if ver := pio.U32BE(S1[4:8]); ver != 0 {
@@ -1884,7 +1931,7 @@ func (self *Conn) handshakeServer() (err error) {
 		return
 	}
 	if C0[0] != 3 {
-		self.Logger.Errorf("rtmp: handshake version=%d invalid", C0[0])
+		log.Errorf("rtmp: handshake version=%d invalid", C0[0])
 		return
 	}
 
@@ -1899,7 +1946,7 @@ func (self *Conn) handshakeServer() (err error) {
 		var ok bool
 		var digest []byte
 		if ok, digest = hsParse1(C1, hsClientPartialKey, hsServerFullKey); !ok {
-			self.Logger.Error("rtmp: handshake server: C1 invalid")
+			log.Error("rtmp: handshake server: C1 invalid")
 			return
 		}
 		hsCreate01(S0S1, srvtime, srvver, hsServerPartialKey)
